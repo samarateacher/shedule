@@ -76,6 +76,39 @@
     
     <!-- Conteúdo Principal do Admin -->
     <div id="content-wrapper" class="flex h-screen overflow-hidden bg-white hidden-by-default">
+        <!-- Modal de Adicionar Agendamento -->
+        <div id="add-appointment-modal" class="fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center hidden">
+            <div class="bg-white rounded-lg shadow-xl p-8 w-11/12 max-w-md animate-fadeInUp">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-xl font-bold">Adicionar Agendamento</h3>
+                    <button id="add-modal-close-btn" class="p-2 rounded-full hover:bg-gray-200">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                    </button>
+                </div>
+                <form id="add-appointment-form">
+                    <div class="mb-4">
+                        <label for="add-student-name" class="block text-sm font-medium text-gray-700">Nome do Aluno</label>
+                        <input type="text" id="add-student-name" class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm" required>
+                    </div>
+                    <div class="mb-4">
+                        <label for="add-date" class="block text-sm font-medium text-gray-700">Data</label>
+                        <input type="date" id="add-date" class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm" required>
+                    </div>
+                    <div class="mb-4">
+                        <label for="add-time" class="block text-sm font-medium text-gray-700">Horário</label>
+                        <select id="add-time" class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm" required></select>
+                    </div>
+                    <div class="mb-4">
+                        <label for="add-student-email" class="block text-sm font-medium text-gray-700">Email do Aluno (Opcional)</label>
+                        <input type="email" id="add-student-email" class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm">
+                    </div>
+                    <div class="text-right mt-8">
+                        <button type="submit" class="bg-blue-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-blue-700">Salvar Agendamento</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
         <!-- Modal de Gerenciamento de Disponibilidade (Mensal) -->
         <div id="availability-modal" class="fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center hidden">
             <div class="bg-white rounded-lg shadow-xl p-8 w-11/12 max-w-xl animate-fadeInUp">
@@ -134,7 +167,10 @@
                     </button>
                 </div>
                 <div id="edit-modal-content">
-                    <p class="mb-2"><strong>Aluno:</strong> <span id="edit-student-name"></span></p>
+                    <div class="mb-4">
+                        <label for="edit-student-name" class="block text-sm font-medium text-gray-700">Nome do Aluno</label>
+                        <input type="text" id="edit-student-name" class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm">
+                    </div>
                     <div class="mb-4">
                         <label for="edit-date" class="block text-sm font-medium text-gray-700">Nova Data</label>
                         <input type="date" id="edit-date" class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm">
@@ -161,8 +197,12 @@
 
         <aside class="w-64 border-r border-gray-200 p-4 flex flex-col flex-shrink-0 hidden sm:flex">
             <div class="mb-6"><h1 class="text-2xl font-bold text-blue-600">Minha Agenda</h1></div>
-            <button id="manage-availability-btn" class="w-full bg-blue-500 text-white font-semibold py-3 px-4 rounded-xl shadow-md hover:bg-blue-600 transition-colors flex items-center justify-center space-x-2 mb-4">
+            <button id="add-appointment-btn" class="w-full bg-blue-500 text-white font-semibold py-3 px-4 rounded-xl shadow-md hover:bg-blue-600 transition-colors flex items-center justify-center space-x-2 mb-4">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" /></svg>
+                <span>Agendar</span>
+            </button>
+            <button id="manage-availability-btn" class="w-full bg-gray-600 text-white font-semibold py-3 px-4 rounded-xl shadow-md hover:bg-gray-700 transition-colors flex items-center justify-center space-x-2 mb-4">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
                 <span>Gerir Horários</span>
             </button>
             <button id="copy-link-btn" class="w-full bg-gray-200 text-gray-700 font-semibold py-3 px-4 rounded-xl hover:bg-gray-300 transition-colors flex items-center justify-center space-x-2 mb-8">
@@ -204,7 +244,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, onAuthStateChanged, signOut, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, onSnapshot, doc, getDoc, setDoc, updateDoc, deleteDoc, Timestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, collection, onSnapshot, doc, getDoc, setDoc, updateDoc, deleteDoc, Timestamp, addDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyDe3nn7CJkundWt0GESwDRXFzorbgUVXI8",
@@ -248,6 +288,14 @@
         const logoutBtnMenu = document.getElementById('logout-btn-menu');
         
         // Modals
+        const addAppointmentModal = document.getElementById('add-appointment-modal');
+        const addModalCloseBtn = document.getElementById('add-modal-close-btn');
+        const addAppointmentForm = document.getElementById('add-appointment-form');
+        const addStudentNameInput = document.getElementById('add-student-name');
+        const addDateInput = document.getElementById('add-date');
+        const addTimeSelect = document.getElementById('add-time');
+        const addStudentEmailInput = document.getElementById('add-student-email');
+        const addAppointmentBtn = document.getElementById('add-appointment-btn');
         const availabilityModal = document.getElementById('availability-modal');
         const modalCloseBtn = document.getElementById('modal-close-btn');
         const modalDoneBtn = document.getElementById('modal-done-btn');
@@ -623,10 +671,53 @@
         dailyModalCloseBtn.addEventListener('click', () => dailyAvailabilityModal.classList.add('hidden'));
         dailyModalSaveBtn.addEventListener('click', saveDailyAvailability);
 
+        // --- MODAL LOGIC (ADD APPOINTMENT) ---
+        function openAddAppointmentModal() {
+            addAppointmentForm.reset();
+            addDateInput.value = formatDateToId(new Date());
+            addTimeSelect.innerHTML = '';
+            for (let hour = 7; hour <= 21; hour++) {
+                const option = document.createElement('option');
+                option.value = hour;
+                option.textContent = `${String(hour).padStart(2, '0')}:00`;
+                addTimeSelect.appendChild(option);
+            }
+            addAppointmentModal.classList.remove('hidden');
+        }
+
+        async function handleAddAppointment(e) {
+            e.preventDefault();
+            const name = addStudentNameInput.value.trim();
+            const dateStr = addDateInput.value;
+            const hour = parseInt(addTimeSelect.value, 10);
+            const email = addStudentEmailInput.value.trim();
+
+            if (!name || !dateStr || isNaN(hour)) {
+                showToast("Nome, data e horário são obrigatórios.", true);
+                return;
+            }
+
+            const [year, month, day] = dateStr.split('-').map(Number);
+            const newTimestamp = new Date(year, month - 1, day, hour);
+
+            try {
+                await addDoc(collection(db, "agendamentos"), {
+                    alunoNome: name,
+                    alunoEmail: email,
+                    timestamp: Timestamp.fromDate(newTimestamp)
+                });
+                showToast("Agendamento adicionado com sucesso!");
+                addAppointmentModal.classList.add('hidden');
+            } catch (error) {
+                showToast("Erro ao adicionar agendamento.", true);
+                console.error("Add appointment error:", error);
+            }
+        }
+
         // --- MODAL LOGIC (EDIT APPOINTMENT) ---
         function openEditAppointmentModal(appointment) {
             currentEditingAppointmentId = appointment.id;
-            editStudentName.textContent = appointment.alunoNome;
+            editStudentName.value = appointment.alunoNome;
             const appointmentDate = appointment.timestamp.toDate();
             editDateInput.value = formatDateToId(appointmentDate);
             editTimeSelect.innerHTML = '';
@@ -645,17 +736,21 @@
             editAppointmentModal.classList.remove('hidden');
         }
         async function handleUpdateAppointment() {
+            const newName = editStudentName.value.trim();
             const newDateStr = editDateInput.value;
             const newHour = parseInt(editTimeSelect.value, 10);
-            if (!newDateStr || isNaN(newHour)) {
-                showToast("Data ou hora inválida.", true);
+            if (!newName || !newDateStr || isNaN(newHour)) {
+                showToast("Todos os campos são obrigatórios.", true);
                 return;
             }
             const [year, month, day] = newDateStr.split('-').map(Number);
             const newTimestamp = new Date(year, month - 1, day, newHour);
             const docRef = doc(db, "agendamentos", currentEditingAppointmentId);
             try {
-                await updateDoc(docRef, { timestamp: Timestamp.fromDate(newTimestamp) });
+                await updateDoc(docRef, { 
+                    alunoNome: newName,
+                    timestamp: Timestamp.fromDate(newTimestamp) 
+                });
                 showToast("Agendamento atualizado com sucesso!");
                 editAppointmentModal.classList.add('hidden');
             } catch (error) {
@@ -688,6 +783,9 @@
                 console.error("Delete error:", error);
             }
         }
+        addAppointmentBtn.addEventListener('click', openAddAppointmentModal);
+        addModalCloseBtn.addEventListener('click', () => addAppointmentModal.classList.add('hidden'));
+        addAppointmentForm.addEventListener('submit', handleAddAppointment);
         editModalCloseBtn.addEventListener('click', () => editAppointmentModal.classList.add('hidden'));
         editSaveBtn.addEventListener('click', handleUpdateAppointment);
         editDeleteBtn.addEventListener('click', showDeleteConfirmation);
