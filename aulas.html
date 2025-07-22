@@ -235,9 +235,6 @@
             confirmationSection.classList.remove('show');
             const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
             selectedDateText.innerHTML = `Horários para <span class="font-bold text-blue-600">${date.toLocaleDateString('pt-BR', options)}</span>`;
-            if (window.innerWidth < 768) {
-                horariosTitle.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            }
             await renderAvailableTimes(date);
         }
 
@@ -287,6 +284,11 @@
                 
                 if (!hasAvailableSlots) {
                      availableTimesContainer.innerHTML = '<p class="text-gray-500 text-center">Nenhum horário disponível para este dia.</p>';
+                }
+
+                // Rola para a seção de horários em telas pequenas, APÓS carregar
+                if (window.innerWidth < 768) {
+                    horariosTitle.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 }
 
             } catch (error) {
@@ -363,6 +365,12 @@
         const header = document.getElementById('page-header');
         let lastScrollY = window.scrollY;
         window.addEventListener('scroll', () => {
+            if (window.scrollY <= 0) {
+                 header.classList.remove('-translate-y-full');
+                 lastScrollY = 0;
+                 return;
+            }
+
             if (lastScrollY < window.scrollY) {
                 header.classList.add('-translate-y-full');
             } else {
