@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Agendamento de Aulas de Inglês</title>
+    <title>Admin - Agenda de Aulas</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Google Fonts: Inter -->
@@ -16,101 +16,192 @@
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
         }
+        .calendar-grid-container { height: calc(100vh - 64px); }
+        .day-cell { min-height: 120px; }
+        .day-cell.today .day-number { background-color: #3b82f6; color: white; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-        .animate-fadeIn { animation: fadeIn 0.8s ease-in-out forwards; }
-        .animate-fadeInUp { opacity: 0; animation: fadeInUp 0.6s ease-out forwards; }
-        #confirmation-section { transition: all 0.5s ease-in-out; max-height: 0; overflow: hidden; }
-        #confirmation-section.show { max-height: 500px; padding-top: 1.5rem; margin-top: 2rem; border-top-width: 1px; }
-        .day.today { background-color: #dbeafe; font-weight: bold; }
-        .day.selected { background-color: #3b82f6 !important; color: white !important; font-weight: bold; }
-        .day:not(.disabled):hover { background-color: #eff6ff; }
-        .day.disabled { color: #d1d5db; cursor: not-allowed; }
-        .time-slot.selected { background-color: #3b82f6; color: white; border-color: #3b82f6; }
+        .animate-fadeInUp { animation: fadeInUp 0.3s ease-out forwards; }
+        .hidden-by-default { display: none; }
+        .availability-slot, .calendar-day { transition: background-color 0.2s ease-in-out; }
+        .calendar-day.disabled { color: #9ca3af; cursor: not-allowed; pointer-events: none; }
+        #toast-notification { transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out; }
+        #toast-notification.show { opacity: 1; transform: translateX(0); }
+        .toggle-checkbox:checked { right: 0; border-color: #48bb78; }
+        .toggle-checkbox:checked + .toggle-label { background-color: #48bb78; }
+        /* Estilos para Week/Day View */
+        .time-grid {
+            display: grid;
+            grid-template-columns: 60px repeat(7, 1fr); /* Coluna de hora + 7 dias */
+            grid-template-rows: auto repeat(15, 4rem); /* Header + 15 slots de 1h (7h-21h) */
+        }
+        .time-grid-day {
+             grid-template-columns: 60px 1fr; /* Coluna de hora + 1 dia */
+        }
     </style>
 </head>
-<body class="bg-gray-50 text-gray-800">
+<body class="bg-gray-100">
 
-    <!-- Modal de Notificação -->
-    <div id="notification-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center hidden">
-        <div class="bg-white rounded-lg shadow-xl p-6 w-11/12 max-w-sm text-center animate-fadeInUp">
-            <h3 id="notification-title" class="text-xl font-bold mb-2"></h3>
-            <p id="notification-message" class="text-gray-600 mb-6"></p>
-            <button id="notification-close-btn" class="bg-blue-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-blue-700 transition-colors">
-                Fechar
-            </button>
+    <!-- Toast de Confirmação -->
+    <div id="toast-notification" class="fixed top-5 right-5 bg-green-500 text-white py-2 px-4 rounded-lg shadow-lg opacity-0 transform translate-x-full pointer-events-none z-[80]">
+        <span id="toast-message"></span>
+    </div>
+
+    <!-- Tela de Login -->
+    <div id="login-container" class="flex items-center justify-center h-screen hidden-by-default">
+        <div class="w-full max-w-md bg-white rounded-2xl shadow-lg p-8">
+            <h2 class="text-2xl font-bold text-center text-gray-800 mb-2">Acesso Restrito</h2>
+            <p class="text-center text-gray-500 mb-8">Faça login para gerenciar sua agenda.</p>
+            <form id="login-form">
+                <div class="mb-4">
+                    <label for="email" class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                    <input type="email" id="email" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                </div>
+                <div class="mb-6">
+                    <label for="password" class="block text-sm font-medium text-gray-700 mb-1">Senha</label>
+                    <input type="password" id="password" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                </div>
+                <p id="error-message" class="text-red-500 text-sm text-center mb-4 hidden"></p>
+                <button type="submit" id="login-btn" class="w-full bg-blue-600 text-white font-bold py-3 rounded-lg hover:bg-blue-700 transition-colors">
+                    Entrar
+                </button>
+            </form>
         </div>
     </div>
 
-    <div class="container mx-auto p-4 sm:p-6 lg:p-8">
-        <header class="text-center mb-10 animate-fadeInUp" style="animation-delay: 0.1s;">
-            <h1 class="text-3xl sm:text-4xl font-bold text-gray-900">Agende sua Aula de Inglês</h1>
-            <p class="mt-2 text-lg text-gray-600">com o Professor <span id="teacher-name">[Seu Nome]</span></p>
-        </header>
-
-        <main class="max-w-4xl mx-auto bg-white p-6 sm:p-8 rounded-2xl shadow-lg animate-fadeInUp" style="animation-delay: 0.3s;">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <div class="border-r-0 md:border-r border-gray-200 md:pr-8">
-                    <h2 class="text-xl font-semibold mb-4">1. Escolha uma data</h2>
-                    <div class="bg-gray-100 p-4 rounded-lg">
-                        <div class="flex items-center justify-between mb-4">
-                            <button id="prev-month-btn" class="p-2 rounded-full hover:bg-gray-200 transition-colors">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
-                            </button>
-                            <h3 id="month-year-header" class="font-semibold text-lg"></h3>
-                            <button id="next-month-btn" class="p-2 rounded-full hover:bg-gray-200 transition-colors">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
-                            </button>
-                        </div>
-                        <div id="calendar-grid" class="grid grid-cols-7 gap-2 text-center text-sm">
-                            <div class="font-medium text-gray-500">D</div><div class="font-medium text-gray-500">S</div><div class="font-medium text-gray-500">T</div><div class="font-medium text-gray-500">Q</div><div class="font-medium text-gray-500">Q</div><div class="font-medium text-gray-500">S</div><div class="font-medium text-gray-500">S</div>
-                        </div>
-                    </div>
-                </div>
-
-                <div>
-                    <h2 class="text-xl font-semibold mb-4">2. Escolha um horário</h2>
-                    <p id="selected-date-text" class="text-gray-600 mb-4">Selecione uma data para ver os horários</p>
-                    <div id="available-times" class="max-h-80 overflow-y-auto pr-2 space-y-2">
-                        <!-- Horários serão inseridos aqui -->
-                    </div>
-                </div>
-            </div>
-
-            <div id="confirmation-section" class="border-gray-200">
-                <div class="animate-fadeInUp">
-                    <h2 class="text-xl font-semibold mb-4">3. Confirme seus dados</h2>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div>
-                            <label for="name" class="block text-sm font-medium text-gray-700">Nome</label>
-                            <input type="text" id="name" class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" required>
-                        </div>
-                        <div>
-                            <label for="email" class="block text-sm font-medium text-gray-700">Email</label>
-                            <input type="email" id="email" class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" required>
-                        </div>
-                    </div>
-                    <div class="mt-6 text-right">
-                        <button id="confirm-btn" class="bg-blue-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-blue-700 transition-all duration-200 shadow-md transform hover:scale-105">
-                            Confirmar Agendamento
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </main>
-
-        <footer class="text-center mt-10 text-gray-500 text-sm animate-fadeIn" style="animation-delay: 0.5s;">
-            <p>&copy; 2025 <span id="teacher-name-footer">[Seu Nome]</span> - Aulas de Inglês. Todos os direitos reservados.</p>
-        </footer>
+    <!-- Tela de Carregamento -->
+    <div id="loading-screen" class="flex items-center justify-center h-screen">
+        <p class="text-lg text-gray-600">Verificando autenticação...</p>
     </div>
+    
+    <!-- Conteúdo Principal do Admin -->
+    <div id="content-wrapper" class="flex h-screen overflow-hidden bg-white hidden-by-default">
+        <!-- Modal de Gerenciamento de Disponibilidade (Mensal) -->
+        <div id="availability-modal" class="fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center hidden">
+            <div class="bg-white rounded-lg shadow-xl p-8 w-11/12 max-w-xl animate-fadeInUp">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-xl font-bold">Gerir Disponibilidade</h3>
+                    <button id="modal-close-btn" class="p-2 rounded-full hover:bg-gray-200">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                    </button>
+                </div>
+                <p class="text-gray-600 mb-6">Selecione um dia para gerenciar os horários específicos.</p>
+                <div id="availability-calendar-container">
+                    <div class="flex items-center justify-between mb-4">
+                        <button id="availability-prev-month-btn" class="p-2 rounded-full hover:bg-gray-200">&lt;</button>
+                        <h3 id="availability-month-year-header" class="font-semibold text-lg"></h3>
+                        <button id="availability-next-month-btn" class="p-2 rounded-full hover:bg-gray-200">&gt;</button>
+                    </div>
+                    <div id="availability-calendar-grid" class="grid grid-cols-7 gap-2 text-center text-sm"></div>
+                </div>
+                <div class="text-right mt-8">
+                    <button id="modal-done-btn" class="bg-gray-500 text-white font-bold py-2 px-6 rounded-lg hover:bg-gray-600 transition-colors">Fechar</button>
+                </div>
+            </div>
+        </div>
 
-    <!-- Firebase SDK -->
+        <!-- Modal de Gerenciamento de Horários Diários -->
+        <div id="daily-availability-modal" class="fixed inset-0 bg-black bg-opacity-70 z-[60] flex items-center justify-center hidden">
+            <div class="bg-white rounded-lg shadow-xl p-8 w-11/12 max-w-md animate-fadeInUp">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 id="daily-modal-title" class="text-xl font-bold">Gerir Horários</h3>
+                    <button id="daily-modal-close-btn" class="p-2 rounded-full hover:bg-gray-200">
+                         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                    </button>
+                </div>
+                <div class="flex items-center justify-between bg-gray-100 p-3 rounded-lg mb-4">
+                    <span class="font-medium text-gray-700">Disponibilidade do dia</span>
+                    <div class="relative inline-block w-12 mr-2 align-middle select-none transition duration-200 ease-in">
+                        <input type="checkbox" name="toggle" id="day-availability-toggle" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer"/>
+                        <label for="day-availability-toggle" class="toggle-label block overflow-hidden h-6 rounded-full bg-gray-300 cursor-pointer"></label>
+                    </div>
+                </div>
+                <p class="text-gray-600 mb-6">Ou clique nos horários individuais para bloquear/desbloquear.</p>
+                <div id="daily-slots-container" class="max-h-72 overflow-y-auto space-y-2 pr-2"></div>
+                <div class="text-right mt-8">
+                    <button id="daily-modal-save-btn" class="bg-blue-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-blue-700">Salvar Dia</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Modal de Edição de Agendamento -->
+        <div id="edit-appointment-modal" class="fixed inset-0 bg-black bg-opacity-70 z-[70] flex items-center justify-center hidden">
+            <div class="bg-white rounded-lg shadow-xl p-8 w-11/12 max-w-md animate-fadeInUp">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-xl font-bold">Editar Agendamento</h3>
+                    <button id="edit-modal-close-btn" class="p-2 rounded-full hover:bg-gray-200">
+                         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                    </button>
+                </div>
+                <div id="edit-modal-content">
+                    <p class="mb-2"><strong>Aluno:</strong> <span id="edit-student-name"></span></p>
+                    <div class="mb-4">
+                        <label for="edit-date" class="block text-sm font-medium text-gray-700">Nova Data</label>
+                        <input type="date" id="edit-date" class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm">
+                    </div>
+                    <div class="mb-4">
+                        <label for="edit-time" class="block text-sm font-medium text-gray-700">Novo Horário</label>
+                        <select id="edit-time" class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm"></select>
+                    </div>
+                </div>
+                <div id="delete-confirmation-content" class="hidden">
+                    <p class="text-center text-lg text-red-600 font-semibold">Tem certeza que deseja excluir este agendamento?</p>
+                    <p class="text-center text-gray-600">Esta ação não pode ser desfeita.</p>
+                </div>
+                <div class="flex justify-between items-center mt-8">
+                    <button id="edit-delete-btn" class="bg-red-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-red-700">Excluir Agendamento</button>
+                    <div id="delete-confirmation-buttons" class="hidden">
+                        <button id="cancel-delete-btn" class="bg-gray-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-gray-600">Cancelar</button>
+                        <button id="confirm-delete-btn" class="bg-red-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-red-700 ml-2">Sim, Excluir</button>
+                    </div>
+                    <button id="edit-save-btn" class="bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700">Salvar Alterações</button>
+                </div>
+            </div>
+        </div>
+
+        <aside class="w-64 border-r border-gray-200 p-4 flex-col flex-shrink-0 hidden sm:flex">
+            <div class="mb-6"><h1 class="text-2xl font-bold text-blue-600">Minha Agenda</h1></div>
+            <button id="manage-availability-btn" class="w-full bg-blue-500 text-white font-semibold py-3 px-4 rounded-xl shadow-md hover:bg-blue-600 transition-colors flex items-center justify-center space-x-2 mb-4">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" /></svg>
+                <span>Gerir Horários</span>
+            </button>
+            <button id="copy-link-btn" class="w-full bg-gray-200 text-gray-700 font-semibold py-3 px-4 rounded-xl hover:bg-gray-300 transition-colors flex items-center justify-center space-x-2 mb-8">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+                <span>Copiar Link</span>
+            </button>
+            <div id="mini-calendar-container"></div>
+            <div class="mt-auto"><button id="logout-btn-sidebar" class="w-full text-left text-gray-600 hover:bg-gray-100 p-2 rounded-lg transition-colors">Sair</button></div>
+        </aside>
+
+        <div class="flex-1 flex flex-col">
+            <header class="h-16 flex-shrink-0 flex items-center justify-between border-b border-gray-200 px-6">
+                <div class="flex items-center space-x-4">
+                    <button id="today-btn" class="border border-gray-300 rounded-lg px-4 py-2 text-sm font-medium hover:bg-gray-100">Hoje</button>
+                    <div class="flex items-center">
+                        <button id="prev-btn" class="p-2 rounded-full hover:bg-gray-100"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg></button>
+                        <button id="next-btn" class="p-2 rounded-full hover:bg-gray-100"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg></button>
+                    </div>
+                    <h2 id="main-month-year-header" class="text-xl text-gray-600 font-normal"></h2>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <select id="view-switcher" class="border border-gray-300 rounded-lg px-3 py-2 text-sm font-medium hover:bg-gray-100 focus:outline-none"><option value="month">Mês</option><option value="week">Semana</option><option value="day">Dia</option></select>
+                    <div class="relative">
+                         <button id="profile-btn" class="w-10 h-10 bg-purple-500 rounded-full flex items-center justify-center text-white font-bold text-lg">P</button>
+                         <div id="profile-menu" class="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-20 hidden"><a href="#" id="logout-btn-menu" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Sair</a></div>
+                    </div>
+                </div>
+            </header>
+            <div id="calendar-container" class="flex-1 overflow-y-auto calendar-grid-container">
+                <!-- As visualizações do calendário serão renderizadas aqui -->
+            </div>
+        </div>
+    </div>
+    
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, getDocs, addDoc, query, where, Timestamp, doc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getAuth, onAuthStateChanged, signOut, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, onSnapshot, doc, getDoc, setDoc, updateDoc, deleteDoc, Timestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // --- CONFIGURAÇÃO E INICIALIZAÇÃO ---
         const firebaseConfig = {
             apiKey: "AIzaSyDe3nn7CJkundWt0GESwDRXFzorbgUVXI8",
             authDomain: "escolainglessamara.firebaseapp.com",
@@ -123,37 +214,91 @@
         const auth = getAuth(app);
         const db = getFirestore(app);
         
-        signInAnonymously(auth).catch((error) => {
-            console.error("Erro na autenticação anônima:", error);
-            showNotification("Erro de Conexão", "Não foi possível conectar ao sistema de agendamento. Por favor, tente novamente mais tarde.");
+        // --- STATE ---
+        let currentDate = new Date();
+        let currentView = 'month';
+        let allAppointments = [];
+        let availabilityCalendarDate = new Date();
+        let dailyBlockedSlots = [];
+        let selectedDateForDailyManagement = null;
+        let currentEditingAppointmentId = null;
+
+        // --- DOM ELEMENTS ---
+        const loginContainer = document.getElementById('login-container');
+        const loginForm = document.getElementById('login-form');
+        const emailInput = document.getElementById('email');
+        const passwordInput = document.getElementById('password');
+        const errorMessage = document.getElementById('error-message');
+        const loadingScreen = document.getElementById('loading-screen');
+        const contentWrapper = document.getElementById('content-wrapper');
+        const calendarContainer = document.getElementById('calendar-container');
+        const mainMonthYearHeader = document.getElementById('main-month-year-header');
+        const prevBtn = document.getElementById('prev-btn');
+        const nextBtn = document.getElementById('next-btn');
+        const todayBtn = document.getElementById('today-btn');
+        const viewSwitcher = document.getElementById('view-switcher');
+        const manageAvailabilityBtn = document.getElementById('manage-availability-btn');
+        const copyLinkBtn = document.getElementById('copy-link-btn');
+        const profileBtn = document.getElementById('profile-btn');
+        const profileMenu = document.getElementById('profile-menu');
+        const logoutBtnSidebar = document.getElementById('logout-btn-sidebar');
+        const logoutBtnMenu = document.getElementById('logout-btn-menu');
+        
+        // Modals
+        const availabilityModal = document.getElementById('availability-modal');
+        const modalCloseBtn = document.getElementById('modal-close-btn');
+        const modalDoneBtn = document.getElementById('modal-done-btn');
+        const availabilityCalendarGrid = document.getElementById('availability-calendar-grid');
+        const availabilityMonthYearHeader = document.getElementById('availability-month-year-header');
+        const availabilityPrevMonthBtn = document.getElementById('availability-prev-month-btn');
+        const availabilityNextMonthBtn = document.getElementById('availability-next-month-btn');
+        const dailyAvailabilityModal = document.getElementById('daily-availability-modal');
+        const dailyModalTitle = document.getElementById('daily-modal-title');
+        const dailyModalCloseBtn = document.getElementById('daily-modal-close-btn');
+        const dailySlotsContainer = document.getElementById('daily-slots-container');
+        const dailyModalSaveBtn = document.getElementById('daily-modal-save-btn');
+        const dayAvailabilityToggle = document.getElementById('day-availability-toggle');
+        const editAppointmentModal = document.getElementById('edit-appointment-modal');
+        const editModalCloseBtn = document.getElementById('edit-modal-close-btn');
+        const editStudentName = document.getElementById('edit-student-name');
+        const editDateInput = document.getElementById('edit-date');
+        const editTimeSelect = document.getElementById('edit-time');
+        const editSaveBtn = document.getElementById('edit-save-btn');
+        const editDeleteBtn = document.getElementById('edit-delete-btn');
+        const editModalContent = document.getElementById('edit-modal-content');
+        const deleteConfirmationContent = document.getElementById('delete-confirmation-content');
+        const deleteConfirmationButtons = document.getElementById('delete-confirmation-buttons');
+        const cancelDeleteBtn = document.getElementById('cancel-delete-btn');
+        const confirmDeleteBtn = document.getElementById('confirm-delete-btn');
+
+        // --- AUTH LOGIC ---
+        onAuthStateChanged(auth, (user) => {
+            loadingScreen.style.display = 'none';
+            if (user) {
+                contentWrapper.style.display = 'flex';
+                loginContainer.style.display = 'none';
+                listenToAppointments();
+            } else {
+                contentWrapper.style.display = 'none';
+                loginContainer.style.display = 'flex';
+            }
         });
 
-        let currentDate = new Date();
-        let selectedDate = null;
-        let selectedTime = null;
+        loginForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            signInWithEmailAndPassword(auth, emailInput.value, passwordInput.value)
+                .catch((error) => {
+                    errorMessage.textContent = 'Email ou senha inválidos.';
+                    errorMessage.classList.remove('hidden');
+                });
+        });
 
-        const monthYearHeader = document.getElementById('month-year-header');
-        const calendarGrid = document.getElementById('calendar-grid');
-        const prevMonthBtn = document.getElementById('prev-month-btn');
-        const nextMonthBtn = document.getElementById('next-month-btn');
-        const availableTimesContainer = document.getElementById('available-times');
-        const selectedDateText = document.getElementById('selected-date-text');
-        const confirmationSection = document.getElementById('confirmation-section');
-        const confirmBtn = document.getElementById('confirm-btn');
-        const nameInput = document.getElementById('name');
-        const emailInput = document.getElementById('email');
-        const notificationModal = document.getElementById('notification-modal');
-        const notificationTitle = document.getElementById('notification-title');
-        const notificationMessage = document.getElementById('notification-message');
-        const notificationCloseBtn = document.getElementById('notification-close-btn');
+        function handleLogout() { signOut(auth).catch((error) => console.error('Erro ao sair:', error)); }
+        logoutBtnSidebar.addEventListener('click', handleLogout);
+        logoutBtnMenu.addEventListener('click', handleLogout);
+        profileBtn.addEventListener('click', () => profileMenu.classList.toggle('hidden'));
 
-        function showNotification(title, message) {
-            notificationTitle.textContent = title;
-            notificationMessage.textContent = message;
-            notificationModal.classList.remove('hidden');
-        }
-        notificationCloseBtn.addEventListener('click', () => notificationModal.classList.add('hidden'));
-
+        // --- UTILS ---
         function formatDateToId(date) {
             const y = date.getFullYear();
             const m = String(date.getMonth() + 1).padStart(2, '0');
@@ -161,145 +306,392 @@
             return `${y}-${m}-${d}`;
         }
 
-        function renderCalendar() {
-            calendarGrid.innerHTML = `<div class="font-medium text-gray-500">D</div><div class="font-medium text-gray-500">S</div><div class="font-medium text-gray-500">T</div><div class="font-medium text-gray-500">Q</div><div class="font-medium text-gray-500">Q</div><div class="font-medium text-gray-500">S</div><div class="font-medium text-gray-500">S</div>`;
+        function showToast(message, isError = false) {
+            const toast = document.getElementById('toast-notification');
+            const toastMessage = document.getElementById('toast-message');
+            toastMessage.textContent = message;
+            toast.classList.remove('bg-green-500', 'bg-red-500');
+            toast.classList.add(isError ? 'bg-red-500' : 'bg-green-500');
+            toast.classList.add('show');
+            setTimeout(() => { toast.classList.remove('show'); }, 3000);
+        }
+
+        // --- COPY LINK LOGIC ---
+        function handleCopyLink() {
+            const currentUrl = window.location.href;
+            const studentPageUrl = currentUrl.substring(0, currentUrl.lastIndexOf('/') + 1) + 'aulas.html';
+            const textArea = document.createElement('textarea');
+            textArea.value = studentPageUrl;
+            document.body.appendChild(textArea);
+            textArea.select();
+            try {
+                document.execCommand('copy');
+                showToast('Link copiado com sucesso!');
+            } catch (err) {
+                showToast('Falha ao copiar o link.', true);
+            }
+            document.body.removeChild(textArea);
+        }
+        copyLinkBtn.addEventListener('click', handleCopyLink);
+
+        // --- MAIN RENDER FUNCTION ---
+        function render() {
+            updateHeader();
+            switch (currentView) {
+                case 'month': renderMonthView(); break;
+                case 'week': renderWeekView(); break;
+                case 'day': renderDayView(); break;
+            }
+        }
+
+        // --- HEADER UPDATE ---
+        function updateHeader() {
+            const options = { month: 'long', year: 'numeric' };
+            if (currentView === 'month') {
+                mainMonthYearHeader.textContent = currentDate.toLocaleString('pt-BR', options);
+            } else if (currentView === 'week') {
+                const startOfWeek = new Date(currentDate);
+                startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay());
+                const endOfWeek = new Date(startOfWeek);
+                endOfWeek.setDate(endOfWeek.getDate() + 6);
+                mainMonthYearHeader.textContent = `${startOfWeek.toLocaleDateString('pt-BR', {day: 'numeric'})} - ${endOfWeek.toLocaleDateString('pt-BR', {day: 'numeric', month: 'long', year: 'numeric'})}`;
+            } else if (currentView === 'day') {
+                mainMonthYearHeader.textContent = currentDate.toLocaleDateString('pt-BR', {weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'});
+            }
+        }
+
+        // --- VIEW RENDERERS ---
+        function renderMonthView() {
+            calendarContainer.innerHTML = `
+                <div id="calendar-header" class="grid grid-cols-7 sticky top-0 bg-white z-10">
+                    <div class="text-center text-sm font-medium text-gray-500 border-r border-b border-gray-200 py-2">DOM</div><div class="text-center text-sm font-medium text-gray-500 border-r border-b border-gray-200 py-2">SEG</div><div class="text-center text-sm font-medium text-gray-500 border-r border-b border-gray-200 py-2">TER</div><div class="text-center text-sm font-medium text-gray-500 border-r border-b border-gray-200 py-2">QUA</div><div class="text-center text-sm font-medium text-gray-500 border-r border-b border-gray-200 py-2">QUI</div><div class="text-center text-sm font-medium text-gray-500 border-r border-b border-gray-200 py-2">SEX</div><div class="text-center text-sm font-medium text-gray-500 border-b border-gray-200 py-2">SÁB</div>
+                </div>
+                <div id="calendar-grid-main" class="grid grid-cols-7 h-full"></div>`;
+            const mainCalendarGrid = document.getElementById('calendar-grid-main');
             const month = currentDate.getMonth();
             const year = currentDate.getFullYear();
-            monthYearHeader.textContent = `${currentDate.toLocaleString('pt-BR', { month: 'long' })} ${year}`;
             const firstDayOfMonth = new Date(year, month, 1).getDay();
             const daysInMonth = new Date(year, month + 1, 0).getDate();
             const today = new Date();
-            for (let i = 0; i < firstDayOfMonth; i++) { calendarGrid.innerHTML += `<div></div>`; }
+            for (let i = 0; i < firstDayOfMonth; i++) { mainCalendarGrid.innerHTML += `<div class="border-r border-b border-gray-200 bg-gray-50"></div>`; }
+            for (let i = 1; i <= daysInMonth; i++) {
+                const dayDate = new Date(year, month, i);
+                const dayCell = document.createElement('div');
+                dayCell.className = 'day-cell border-r border-b border-gray-200 p-2 relative';
+                if (dayDate.getDay() === 0 || dayDate.getDay() === 6) { dayCell.classList.add('bg-gray-50'); }
+                const dayNumber = document.createElement('span');
+                dayNumber.textContent = i;
+                dayNumber.className = 'day-number w-7 h-7 flex items-center justify-center rounded-full text-sm';
+                if (dayDate.toDateString() === today.toDateString()) { dayNumber.classList.add('bg-blue-500', 'text-white'); }
+                dayCell.appendChild(dayNumber);
+                const appointmentsForDay = allAppointments.filter(app => app.timestamp.toDate().toDateString() === dayDate.toDateString()).sort((a, b) => a.timestamp.toDate() - b.timestamp.toDate());
+                if (appointmentsForDay.length > 0) {
+                    const appointmentsContainer = document.createElement('div');
+                    appointmentsContainer.className = 'mt-2 space-y-1';
+                    appointmentsForDay.slice(0, 2).forEach(app => {
+                        const appEl = document.createElement('div');
+                        appEl.className = 'bg-green-100 border-l-4 border-green-500 text-green-800 p-1 rounded-r-md text-xs cursor-pointer hover:bg-green-200 truncate';
+                        const appTime = app.timestamp.toDate().getHours();
+                        appEl.innerHTML = `<strong>${String(appTime).padStart(2, '0')}:00</strong> ${app.alunoNome}`;
+                        appEl.addEventListener('click', () => openEditAppointmentModal(app));
+                        appointmentsContainer.appendChild(appEl);
+                    });
+                    if (appointmentsForDay.length > 2) {
+                        const moreEl = document.createElement('div');
+                        moreEl.className = 'text-xs text-blue-500 font-semibold cursor-pointer';
+                        moreEl.textContent = `+${appointmentsForDay.length - 2} a mais`;
+                        moreEl.addEventListener('click', () => { currentDate = dayDate; currentView = 'day'; viewSwitcher.value = 'day'; render(); });
+                        appointmentsContainer.appendChild(moreEl);
+                    }
+                    dayCell.appendChild(appointmentsContainer);
+                }
+                mainCalendarGrid.appendChild(dayCell);
+            }
+        }
+
+        function renderWeekView() {
+            calendarContainer.innerHTML = '';
+            const grid = document.createElement('div');
+            grid.className = 'time-grid';
+            grid.innerHTML += `<div class="sticky top-0 bg-white z-10"></div>`;
+            const startOfWeek = new Date(currentDate);
+            startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay());
+            for (let i = 0; i < 7; i++) {
+                const day = new Date(startOfWeek);
+                day.setDate(day.getDate() + i);
+                grid.innerHTML += `<div class="sticky top-0 bg-white z-10 text-center p-2 border-b border-l"><div class="text-xs text-gray-500">${day.toLocaleDateString('pt-BR', { weekday: 'short' }).toUpperCase()}</div><div class="text-2xl font-semibold">${day.getDate()}</div></div>`;
+            }
+            for (let hour = 7; hour <= 21; hour++) {
+                grid.innerHTML += `<div class="relative text-right pr-2 text-xs text-gray-500"><span class="absolute -top-2 right-2 bg-white px-1 z-10">${hour}:00</span></div>`;
+                for (let day = 0; day < 7; day++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'border-b border-l relative';
+                    cell.dataset.day = day;
+                    cell.dataset.hour = hour;
+                    grid.appendChild(cell);
+                }
+            }
+            calendarContainer.appendChild(grid);
+            const endOfWeek = new Date(startOfWeek);
+            endOfWeek.setDate(endOfWeek.getDate() + 6);
+            endOfWeek.setHours(23, 59, 59);
+            const weekAppointments = allAppointments.filter(app => { const appDate = app.timestamp.toDate(); return appDate >= startOfWeek && appDate <= endOfWeek; });
+            weekAppointments.forEach(app => {
+                const appDate = app.timestamp.toDate();
+                const dayOfWeek = appDate.getDay();
+                const startHour = appDate.getHours();
+                const targetCell = grid.querySelector(`[data-day="${dayOfWeek}"][data-hour="${startHour}"]`);
+                if (targetCell) {
+                    const appointmentEl = document.createElement('div');
+                    appointmentEl.className = 'absolute top-0 left-0 w-full h-full bg-blue-100 border-l-4 border-blue-500 p-1 rounded-r-md cursor-pointer text-xs overflow-hidden';
+                    appointmentEl.innerHTML = `<div class="font-semibold truncate">${app.alunoNome}</div><div class="truncate">${startHour}:00</div>`;
+                    appointmentEl.addEventListener('click', () => openEditAppointmentModal(app));
+                    targetCell.appendChild(appointmentEl);
+                }
+            });
+        }
+
+        function renderDayView() {
+            calendarContainer.innerHTML = '';
+            const grid = document.createElement('div');
+            grid.className = 'time-grid time-grid-day';
+            grid.innerHTML += `<div class="sticky top-0 bg-white z-10"></div><div class="sticky top-0 bg-white z-10 text-center p-2 border-b border-l"></div>`;
+            for (let hour = 7; hour <= 21; hour++) {
+                grid.innerHTML += `<div class="relative text-right pr-2 text-xs text-gray-500"><span class="absolute -top-2 right-2 bg-white px-1 z-10">${hour}:00</span></div>`;
+                const cell = document.createElement('div');
+                cell.className = 'border-b border-l relative';
+                cell.dataset.hour = hour;
+                grid.appendChild(cell);
+            }
+            calendarContainer.appendChild(grid);
+            const dayAppointments = allAppointments.filter(app => app.timestamp.toDate().toDateString() === currentDate.toDateString());
+            dayAppointments.forEach(app => {
+                const appDate = app.timestamp.toDate();
+                const startHour = appDate.getHours();
+                const targetCell = grid.querySelector(`[data-hour="${startHour}"]`);
+                if (targetCell) {
+                    const appointmentEl = document.createElement('div');
+                    appointmentEl.className = 'absolute top-0 left-0 w-full h-full bg-blue-100 border-l-4 border-blue-500 p-1 rounded-r-md cursor-pointer text-xs overflow-hidden';
+                    appointmentEl.innerHTML = `<div class="font-semibold truncate">${app.alunoNome}</div><div class="truncate">${startHour}:00</div>`;
+                    appointmentEl.addEventListener('click', () => openEditAppointmentModal(app));
+                    targetCell.appendChild(appointmentEl);
+                }
+            });
+        }
+
+        // --- NAVIGATION LOGIC ---
+        function handleNavigation(direction) {
+            switch (currentView) {
+                case 'month': currentDate.setMonth(currentDate.getMonth() + direction); break;
+                case 'week': currentDate.setDate(currentDate.getDate() + (7 * direction)); break;
+                case 'day': currentDate.setDate(currentDate.getDate() + direction); break;
+            }
+            render();
+        }
+        prevBtn.addEventListener('click', () => handleNavigation(-1));
+        nextBtn.addEventListener('click', () => handleNavigation(1));
+        todayBtn.addEventListener('click', () => { currentDate = new Date(); render(); });
+        viewSwitcher.addEventListener('change', (e) => { currentView = e.target.value; render(); });
+
+        // --- DATA LISTENER ---
+        function listenToAppointments() {
+            const agendamentosRef = collection(db, "agendamentos");
+            onSnapshot(agendamentosRef, (querySnapshot) => {
+                allAppointments = [];
+                querySnapshot.forEach((doc) => { allAppointments.push({ id: doc.id, ...doc.data() }); });
+                render();
+            }, (error) => { console.error("Erro ao buscar agendamentos: ", error); });
+        }
+        
+        // --- MODAL LOGIC (AVAILABILITY) ---
+        function renderAvailabilityCalendar() {
+            const grid = availabilityCalendarGrid;
+            const header = availabilityMonthYearHeader;
+            const date = availabilityCalendarDate;
+            const daysOfWeek = ['D', 'S', 'T', 'Q', 'Q', 'S', 'S'];
+            grid.innerHTML = '';
+            daysOfWeek.forEach((day, index) => {
+                const dayHeaderEl = document.createElement('div');
+                dayHeaderEl.className = 'font-medium text-gray-500 p-2';
+                if (index === 0 || index === 6) { dayHeaderEl.classList.add('bg-gray-100', 'rounded'); }
+                dayHeaderEl.textContent = day;
+                grid.appendChild(dayHeaderEl);
+            });
+            const month = date.getMonth();
+            const year = date.getFullYear();
+            header.textContent = `${date.toLocaleString('pt-BR', { month: 'long' })} ${year}`;
+            const firstDayOfMonth = new Date(year, month, 1).getDay();
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            const today = new Date();
+            for (let i = 0; i < firstDayOfMonth; i++) { grid.innerHTML += `<div></div>`; }
             for (let i = 1; i <= daysInMonth; i++) {
                 const dayDate = new Date(year, month, i);
                 const dayEl = document.createElement('div');
                 dayEl.textContent = i;
-                dayEl.classList.add('day', 'cursor-pointer', 'p-2', 'rounded-full', 'transition-colors');
+                dayEl.className = 'calendar-day p-2 rounded-full';
                 if (dayDate < today.setHours(0,0,0,0)) {
                     dayEl.classList.add('disabled');
                 } else {
-                    dayEl.addEventListener('click', () => selectDay(dayDate));
+                    dayEl.classList.add('cursor-pointer', 'hover:bg-blue-100');
+                    dayEl.addEventListener('click', () => openDailyAvailabilityModal(dayDate));
                 }
-                if (dayDate.toDateString() === today.toDateString()) { dayEl.classList.add('today'); }
-                if (selectedDate && dayDate.toDateString() === selectedDate.toDateString()) { dayEl.classList.add('selected'); }
-                calendarGrid.appendChild(dayEl);
+                grid.appendChild(dayEl);
             }
         }
-
-        async function selectDay(date) {
-            selectedDate = date;
-            selectedTime = null;
-            renderCalendar();
-            confirmationSection.classList.remove('show');
-            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-            selectedDateText.innerHTML = `Horários para <span class="font-bold text-blue-600">${date.toLocaleDateString('pt-BR', options)}</span>`;
-            await renderAvailableTimes(date);
+        async function openDailyAvailabilityModal(date) {
+            selectedDateForDailyManagement = date;
+            dailyModalTitle.textContent = `Gerir Dia: ${date.toLocaleDateString('pt-BR')}`;
+            dailySlotsContainer.innerHTML = `<p class="text-center p-4">Carregando...</p>`;
+            dailyAvailabilityModal.classList.remove('hidden');
+            const docId = formatDateToId(date);
+            const docRef = doc(db, "unavailable_slots", docId);
+            const docSnap = await getDoc(docRef);
+            if (docSnap.exists()) {
+                dailyBlockedSlots = docSnap.data().blocked_hours || [];
+            } else {
+                const dayOfWeek = date.getDay();
+                if (dayOfWeek === 0 || dayOfWeek === 6) {
+                    dailyBlockedSlots = Array.from({length: 15}, (_, i) => i + 7);
+                } else {
+                    dailyBlockedSlots = [];
+                }
+            }
+            dailySlotsContainer.innerHTML = '';
+            const totalHours = (21 - 7) + 1;
+            dayAvailabilityToggle.checked = dailyBlockedSlots.length < totalHours;
+            for (let hour = 7; hour <= 21; hour++) {
+                const slotEl = document.createElement('button');
+                const isBlocked = dailyBlockedSlots.includes(hour);
+                slotEl.textContent = `${String(hour).padStart(2, '0')}:00 - ${String(hour + 1).padStart(2, '0')}:00`;
+                slotEl.className = `w-full text-center p-3 border rounded-lg transition-colors availability-slot`;
+                slotEl.classList.add(isBlocked ? 'bg-red-200' : 'bg-green-200');
+                slotEl.dataset.hour = hour;
+                slotEl.addEventListener('click', () => toggleDailySlot(hour, slotEl));
+                dailySlotsContainer.appendChild(slotEl);
+            }
         }
-
-        async function renderAvailableTimes(date) {
-            availableTimesContainer.innerHTML = '<p class="text-gray-500">Carregando horários...</p>';
-            
-            const startOfDay = new Date(date);
-            startOfDay.setHours(0, 0, 0, 0);
-            const endOfDay = new Date(date);
-            endOfDay.setHours(23, 59, 59, 999);
-
+        function toggleDailySlot(hour, element) {
+            const hourIndex = dailyBlockedSlots.indexOf(hour);
+            if (hourIndex > -1) {
+                dailyBlockedSlots.splice(hourIndex, 1);
+                element.classList.remove('bg-red-200');
+                element.classList.add('bg-green-200');
+            } else {
+                dailyBlockedSlots.push(hour);
+                element.classList.remove('bg-green-200');
+                element.classList.add('bg-red-200');
+            }
+            const totalHours = (21 - 7) + 1;
+            dayAvailabilityToggle.checked = dailyBlockedSlots.length < totalHours;
+        }
+        dayAvailabilityToggle.addEventListener('change', (e) => {
+            const isAvailable = e.target.checked;
+            dailyBlockedSlots = [];
+            if (!isAvailable) {
+                for (let hour = 7; hour <= 21; hour++) { dailyBlockedSlots.push(hour); }
+            }
+            document.querySelectorAll('#daily-slots-container .availability-slot').forEach(slotEl => {
+                slotEl.classList.toggle('bg-green-200', isAvailable);
+                slotEl.classList.toggle('bg-red-200', !isAvailable);
+            });
+        });
+        async function saveDailyAvailability() {
+            if (!selectedDateForDailyManagement) return;
+            dailyModalSaveBtn.disabled = true;
+            dailyModalSaveBtn.textContent = "Salvando...";
+            const docId = formatDateToId(selectedDateForDailyManagement);
+            const docRef = doc(db, "unavailable_slots", docId);
             try {
-                // 1. Get existing appointments for the day
-                const agendamentosRef = collection(db, "agendamentos");
-                const q = query(agendamentosRef, where("timestamp", ">=", startOfDay), where("timestamp", "<=", endOfDay));
-                const appointmentsSnapshot = await getDocs(q);
-                const bookedTimes = appointmentsSnapshot.docs.map(doc => doc.data().timestamp.toDate().getHours());
-
-                // 2. Get the specific unavailability rules for the day
-                const docId = formatDateToId(date);
-                const unavailRef = doc(db, "unavailable_slots", docId);
-                const unavailSnap = await getDoc(unavailRef);
-                const blockedHours = unavailSnap.exists() ? unavailSnap.data().blocked_hours || [] : [];
-
-                availableTimesContainer.innerHTML = '';
-                let hasAvailableSlots = false;
-                for (let hour = 7; hour <= 21; hour++) {
-                    const isBooked = bookedTimes.includes(hour);
-                    const isBlockedByAdmin = blockedHours.includes(hour);
-                    
-                    const timeSlot = document.createElement('button');
-                    timeSlot.classList.add('w-full', 'text-center', 'p-3', 'border', 'rounded-lg', 'transition-all', 'duration-200', 'ease-in-out', 'time-slot');
-                    timeSlot.textContent = `${String(hour).padStart(2, '0')}:00 - ${String(hour + 1).padStart(2, '0')}:00`;
-
-                    if(isBooked || isBlockedByAdmin) {
-                        timeSlot.classList.add('border-gray-200', 'bg-gray-100', 'text-gray-400', 'cursor-not-allowed');
-                        timeSlot.disabled = true;
-                        if(isBooked) timeSlot.textContent += " (Agendado)";
-                        if(isBlockedByAdmin) timeSlot.textContent += " (Indisponível)";
-                    } else {
-                        hasAvailableSlots = true;
-                        timeSlot.classList.add('border-gray-300', 'hover:bg-blue-500', 'hover:text-white', 'hover:border-blue-500', 'transform', 'hover:scale-105');
-                        timeSlot.addEventListener('click', () => selectTime(hour, timeSlot));
-                    }
-                    availableTimesContainer.appendChild(timeSlot);
-                }
-                
-                if (!hasAvailableSlots) {
-                     availableTimesContainer.innerHTML = '<p class="text-gray-500 text-center">Nenhum horário disponível para este dia.</p>';
-                }
-
+                await setDoc(docRef, { blocked_hours: dailyBlockedSlots });
+                dailyAvailabilityModal.classList.add('hidden');
+                showToast("Horários salvos com sucesso!");
             } catch (error) {
-                console.error("Erro ao buscar horários: ", error);
-                availableTimesContainer.innerHTML = '<p class="text-red-500">Erro ao carregar horários. Tente novamente.</p>';
-            }
-        }
-
-        function selectTime(hour, element) {
-            selectedTime = hour;
-            document.querySelectorAll('.time-slot').forEach(btn => btn.classList.remove('selected'));
-            element.classList.add('selected');
-            confirmationSection.classList.add('show');
-        }
-
-        async function handleConfirmation() {
-            if (!selectedDate || selectedTime === null) {
-                showNotification("Atenção", "Por favor, selecione uma data e um horário.");
-                return;
-            }
-            const name = nameInput.value.trim();
-            const email = emailInput.value.trim();
-            if (!name || !email) {
-                showNotification("Atenção", "Por favor, preencha seu nome e email.");
-                return;
-            }
-            
-            confirmBtn.disabled = true;
-            confirmBtn.textContent = "Agendando...";
-
-            const appointmentTimestamp = new Date(selectedDate);
-            appointmentTimestamp.setHours(selectedTime, 0, 0, 0);
-
-            try {
-                await addDoc(collection(db, "agendamentos"), {
-                    alunoNome: name,
-                    alunoEmail: email,
-                    timestamp: Timestamp.fromDate(appointmentTimestamp)
-                });
-                showNotification("Sucesso!", `Sua aula foi agendada para ${selectedDate.toLocaleDateString('pt-BR')} às ${selectedTime}:00.`);
-                nameInput.value = '';
-                emailInput.value = '';
-                confirmationSection.classList.remove('show');
-                selectDay(selectedDate); // Re-renderiza os horários do dia
-            } catch (error) {
-                console.error("Erro ao adicionar agendamento: ", error);
-                showNotification("Erro", "Não foi possível completar o agendamento. Por favor, tente novamente.");
+                console.error("Erro ao salvar horários diários:", error);
+                showToast("Erro ao salvar. Verifique as permissões.", true);
             } finally {
-                confirmBtn.disabled = false;
-                confirmBtn.textContent = "Confirmar Agendamento";
+                dailyModalSaveBtn.disabled = false;
+                dailyModalSaveBtn.textContent = "Salvar Dia";
             }
         }
+        manageAvailabilityBtn.addEventListener('click', () => { availabilityModal.classList.remove('hidden'); renderAvailabilityCalendar(); });
+        modalCloseBtn.addEventListener('click', () => availabilityModal.classList.add('hidden'));
+        modalDoneBtn.addEventListener('click', () => availabilityModal.classList.add('hidden'));
+        availabilityPrevMonthBtn.addEventListener('click', () => { availabilityCalendarDate.setMonth(availabilityCalendarDate.getMonth() - 1); renderAvailabilityCalendar(); });
+        availabilityNextMonthBtn.addEventListener('click', () => { availabilityCalendarDate.setMonth(availabilityCalendarDate.getMonth() + 1); renderAvailabilityCalendar(); });
+        dailyModalCloseBtn.addEventListener('click', () => dailyAvailabilityModal.classList.add('hidden'));
+        dailyModalSaveBtn.addEventListener('click', saveDailyAvailability);
 
-        prevMonthBtn.addEventListener('click', () => { currentDate.setMonth(currentDate.getMonth() - 1); renderCalendar(); });
-        nextMonthBtn.addEventListener('click', () => { currentDate.setMonth(currentDate.getMonth() + 1); renderCalendar(); });
-        confirmBtn.addEventListener('click', handleConfirmation);
-        
-        window.onload = () => { renderCalendar(); };
+        // --- MODAL LOGIC (EDIT APPOINTMENT) ---
+        function openEditAppointmentModal(appointment) {
+            currentEditingAppointmentId = appointment.id;
+            editStudentName.textContent = appointment.alunoNome;
+            const appointmentDate = appointment.timestamp.toDate();
+            editDateInput.value = formatDateToId(appointmentDate);
+            editTimeSelect.innerHTML = '';
+            for (let hour = 7; hour <= 21; hour++) {
+                const option = document.createElement('option');
+                option.value = hour;
+                option.textContent = `${String(hour).padStart(2, '0')}:00`;
+                editTimeSelect.appendChild(option);
+            }
+            editTimeSelect.value = appointmentDate.getHours();
+            editModalContent.classList.remove('hidden');
+            editSaveBtn.classList.remove('hidden');
+            editDeleteBtn.classList.remove('hidden');
+            deleteConfirmationContent.classList.add('hidden');
+            deleteConfirmationButtons.classList.add('hidden');
+            editAppointmentModal.classList.remove('hidden');
+        }
+        async function handleUpdateAppointment() {
+            const newDateStr = editDateInput.value;
+            const newHour = parseInt(editTimeSelect.value, 10);
+            if (!newDateStr || isNaN(newHour)) {
+                showToast("Data ou hora inválida.", true);
+                return;
+            }
+            const [year, month, day] = newDateStr.split('-').map(Number);
+            const newTimestamp = new Date(year, month - 1, day, newHour);
+            const docRef = doc(db, "agendamentos", currentEditingAppointmentId);
+            try {
+                await updateDoc(docRef, { timestamp: Timestamp.fromDate(newTimestamp) });
+                showToast("Agendamento atualizado com sucesso!");
+                editAppointmentModal.classList.add('hidden');
+            } catch (error) {
+                showToast("Erro ao atualizar agendamento.", true);
+                console.error("Update error:", error);
+            }
+        }
+        function showDeleteConfirmation() {
+            editModalContent.classList.add('hidden');
+            editSaveBtn.classList.add('hidden');
+            editDeleteBtn.classList.add('hidden');
+            deleteConfirmationContent.classList.remove('hidden');
+            deleteConfirmationButtons.classList.remove('hidden');
+        }
+        function cancelDelete() {
+            editModalContent.classList.remove('hidden');
+            editSaveBtn.classList.remove('hidden');
+            editDeleteBtn.classList.remove('hidden');
+            deleteConfirmationContent.classList.add('hidden');
+            deleteConfirmationButtons.classList.add('hidden');
+        }
+        async function handleConfirmDelete() {
+            const docRef = doc(db, "agendamentos", currentEditingAppointmentId);
+            try {
+                await deleteDoc(docRef);
+                showToast("Agendamento excluído com sucesso!");
+                editAppointmentModal.classList.add('hidden');
+            } catch (error) {
+                showToast("Erro ao excluir agendamento.", true);
+                console.error("Delete error:", error);
+            }
+        }
+        editModalCloseBtn.addEventListener('click', () => editAppointmentModal.classList.add('hidden'));
+        editSaveBtn.addEventListener('click', handleUpdateAppointment);
+        editDeleteBtn.addEventListener('click', showDeleteConfirmation);
+        cancelDeleteBtn.addEventListener('click', cancelDelete);
+        confirmDeleteBtn.addEventListener('click', handleConfirmDelete);
+
     </script>
 </body>
 </html>
