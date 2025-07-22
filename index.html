@@ -159,7 +159,7 @@
             </div>
         </div>
 
-        <aside class="w-64 border-r border-gray-200 p-4 flex-col flex-shrink-0 hidden sm:flex">
+        <aside class="w-64 border-r border-gray-200 p-4 flex flex-col flex-shrink-0 hidden sm:flex">
             <div class="mb-6"><h1 class="text-2xl font-bold text-blue-600">Minha Agenda</h1></div>
             <button id="manage-availability-btn" class="w-full bg-blue-500 text-white font-semibold py-3 px-4 rounded-xl shadow-md hover:bg-blue-600 transition-colors flex items-center justify-center space-x-2 mb-4">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" /></svg>
@@ -170,7 +170,9 @@
                 <span>Copiar Link</span>
             </button>
             <div id="mini-calendar-container"></div>
-            <div class="mt-auto"><button id="logout-btn-sidebar" class="w-full text-left text-gray-600 hover:bg-gray-100 p-2 rounded-lg transition-colors">Sair</button></div>
+            <div class="mt-auto">
+                <!-- Botão de Sair removido daqui -->
+            </div>
         </aside>
 
         <div class="flex-1 flex flex-col">
@@ -186,7 +188,9 @@
                 <div class="flex items-center space-x-2">
                     <select id="view-switcher" class="border border-gray-300 rounded-lg px-3 py-2 text-sm font-medium hover:bg-gray-100 focus:outline-none"><option value="month">Mês</option><option value="week">Semana</option><option value="day">Dia</option></select>
                     <div class="relative">
-                         <button id="profile-btn" class="w-10 h-10 bg-purple-500 rounded-full flex items-center justify-center text-white font-bold text-lg">P</button>
+                         <button id="profile-btn" class="w-10 h-10 rounded-full overflow-hidden">
+                            <img src="https://lh3.googleusercontent.com/pw/AP1GczOiHiozdELOcECbcqey-LOW9MxJji6afuQkoIU50EgyeC4ZcO1PrLjlMRJEiQZqiF1sr5DNqYTc6_8X-I4iNqzGH__uVyeHr3_dnls_TBpLolASPAQdDrmYWFA_od9WIQE6Ea-WnyQpR6mTm-tIi0RdRw=w866-h869-s-no-gm?authuser=0" alt="Foto do Perfil" class="w-full h-full object-cover">
+                         </button>
                          <div id="profile-menu" class="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-20 hidden"><a href="#" id="logout-btn-menu" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Sair</a></div>
                     </div>
                 </div>
@@ -241,7 +245,6 @@
         const copyLinkBtn = document.getElementById('copy-link-btn');
         const profileBtn = document.getElementById('profile-btn');
         const profileMenu = document.getElementById('profile-menu');
-        const logoutBtnSidebar = document.getElementById('logout-btn-sidebar');
         const logoutBtnMenu = document.getElementById('logout-btn-menu');
         
         // Modals
@@ -294,7 +297,6 @@
         });
 
         function handleLogout() { signOut(auth).catch((error) => console.error('Erro ao sair:', error)); }
-        logoutBtnSidebar.addEventListener('click', handleLogout);
         logoutBtnMenu.addEventListener('click', handleLogout);
         profileBtn.addEventListener('click', () => profileMenu.classList.toggle('hidden'));
 
