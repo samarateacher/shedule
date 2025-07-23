@@ -61,7 +61,7 @@
         </div>
     </div>
 
-    <header id="page-header" class="bg-white shadow-md">
+    <header id="page-header" class="bg-white shadow-md sticky top-0 z-40">
         <div class="container mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex items-center justify-between h-32">
                 <img src="https://lh3.googleusercontent.com/pw/AP1GczPppZOenl7VdNbTItNTFDiKID9a1GZNy65Z5J696zptbeQifQ7hGv04MupxDzgpFksynXNMKerzZfMOy2xQjOFvDDyXpwYirWq0l2hJwe59wm_ZKRIn6EFcRro5zw63w3OCRoPVV8CMSWi2u6P2IoKfCg=w500-h500-s-no-gm?authuser=0" 
@@ -222,12 +222,24 @@
             const d = String(date.getDate()).padStart(2, '0');
             return `${y}-${m}-${d}`;
         }
+        
+        function formatMonthToId(date) {
+            const y = date.getFullYear();
+            const m = String(date.getMonth() + 1).padStart(2, '0');
+            return `${y}-${m}`;
+        }
 
-        function renderCalendar() {
+        async function renderCalendar() {
             calendarGrid.innerHTML = `<div class="font-medium text-gray-500">D</div><div class="font-medium text-gray-500">S</div><div class="font-medium text-gray-500">T</div><div class="font-medium text-gray-500">Q</div><div class="font-medium text-gray-500">Q</div><div class="font-medium text-gray-500">S</div><div class="font-medium text-gray-500">S</div>`;
             const month = currentDate.getMonth();
             const year = currentDate.getFullYear();
             monthYearHeader.textContent = `${currentDate.toLocaleString('pt-BR', { month: 'long' })} ${year}`;
+            
+            const monthId = formatMonthToId(currentDate);
+            const docRef = doc(db, "month_status", monthId);
+            const docSnap = await getDoc(docRef);
+            const isMonthPublished = docSnap.exists() && docSnap.data().isPublished;
+
             const firstDayOfMonth = new Date(year, month, 1).getDay();
             const daysInMonth = new Date(year, month + 1, 0).getDate();
             const today = new Date();
@@ -236,15 +248,19 @@
                 const dayDate = new Date(year, month, i);
                 const dayEl = document.createElement('div');
                 dayEl.textContent = i;
-                dayEl.classList.add('day', 'cursor-pointer', 'p-2', 'rounded-full', 'transition-colors');
-                if (dayDate < today.setHours(0,0,0,0)) {
+                dayEl.classList.add('day', 'p-2', 'rounded-full', 'transition-colors');
+                if (dayDate < today.setHours(0,0,0,0) || !isMonthPublished) {
                     dayEl.classList.add('disabled');
                 } else {
+                    dayEl.classList.add('cursor-pointer', 'hover:bg-blue-100');
                     dayEl.addEventListener('click', () => selectDay(dayDate));
                 }
                 if (dayDate.toDateString() === today.toDateString()) { dayEl.classList.add('today'); }
                 if (selectedDate && dayDate.toDateString() === selectedDate.toDateString()) { dayEl.classList.add('selected'); }
                 calendarGrid.appendChild(dayEl);
+            }
+            if (!isMonthPublished) {
+                availableTimesContainer.innerHTML = '<p class="text-gray-500 text-center">Agendamentos para este mês ainda não liberados.</p>';
             }
         }
 
@@ -387,23 +403,6 @@
                 confirmBtn.textContent = "Confirmar Agendamento";
             }
         }
-
-        // Lógica para esconder o cabeçalho ao rolar
-        const header = document.getElementById('page-header');
-        let lastScrollY = window.scrollY;
-        window.addEventListener('scroll', () => {
-             if (window.scrollY <= 0) {
-                 header.classList.remove('-translate-y-full');
-                 lastScrollY = 0;
-                 return;
-            }
-            if (lastScrollY < window.scrollY) {
-                header.classList.add('-translate-y-full');
-            } else {
-                header.classList.remove('-translate-y-full');
-            }
-            lastScrollY = window.scrollY;
-        });
 
         prevMonthBtn.addEventListener('click', () => { currentDate.setMonth(currentDate.getMonth() - 1); renderCalendar(); });
         nextMonthBtn.addEventListener('click', () => { currentDate.setMonth(currentDate.getMonth() + 1); renderCalendar(); });

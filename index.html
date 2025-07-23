@@ -224,6 +224,11 @@
                         <button id="next-btn" class="p-2 rounded-full hover:bg-gray-100"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg></button>
                     </div>
                     <h2 id="main-month-year-header" class="text-xl text-gray-600 font-normal"></h2>
+                    <div class="relative inline-block w-12 ml-4 align-middle select-none transition duration-200 ease-in">
+                        <input type="checkbox" name="toggle" id="month-status-toggle" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer"/>
+                        <label for="month-status-toggle" class="toggle-label block overflow-hidden h-6 rounded-full bg-gray-300 cursor-pointer"></label>
+                    </div>
+                    <span id="month-status-label" class="text-sm font-medium text-gray-500">Mês Não Liberado</span>
                 </div>
                 <div class="flex items-center space-x-2">
                     <select id="view-switcher" class="border border-gray-300 rounded-lg px-3 py-2 text-sm font-medium hover:bg-gray-100 focus:outline-none"><option value="month">Mês</option><option value="week">Semana</option><option value="day">Dia</option></select>
@@ -286,6 +291,8 @@
         const profileBtn = document.getElementById('profile-btn');
         const profileMenu = document.getElementById('profile-menu');
         const logoutBtnMenu = document.getElementById('logout-btn-menu');
+        const monthStatusToggle = document.getElementById('month-status-toggle');
+        const monthStatusLabel = document.getElementById('month-status-label');
         
         // Modals
         const addAppointmentModal = document.getElementById('add-appointment-modal');
@@ -352,8 +359,7 @@
         function formatDateToId(date) {
             const y = date.getFullYear();
             const m = String(date.getMonth() + 1).padStart(2, '0');
-            const d = String(date.getDate()).padStart(2, '0');
-            return `${y}-${m}-${d}`;
+            return `${y}-${m}`;
         }
 
         function showToast(message, isError = false) {
@@ -385,8 +391,9 @@
         copyLinkBtn.addEventListener('click', handleCopyLink);
 
         // --- MAIN RENDER FUNCTION ---
-        function render() {
+        async function render() {
             updateHeader();
+            await updateMonthStatusUI();
             switch (currentView) {
                 case 'month': renderMonthView(); break;
                 case 'week': renderWeekView(); break;
@@ -553,6 +560,33 @@
             }, (error) => { console.error("Erro ao buscar agendamentos: ", error); });
         }
         
+        // --- MONTH STATUS LOGIC ---
+        async function updateMonthStatusUI() {
+            const monthId = formatDateToId(currentDate);
+            const docRef = doc(db, "month_status", monthId);
+            const docSnap = await getDoc(docRef);
+            const isPublished = docSnap.exists() && docSnap.data().isPublished;
+            
+            monthStatusToggle.checked = isPublished;
+            monthStatusLabel.textContent = isPublished ? 'Mês Liberado' : 'Mês Não Liberado';
+            monthStatusLabel.classList.toggle('text-green-600', isPublished);
+            monthStatusLabel.classList.toggle('text-gray-500', !isPublished);
+        }
+
+        async function handleMonthStatusToggle() {
+            const monthId = formatDateToId(currentDate);
+            const docRef = doc(db, "month_status", monthId);
+            try {
+                await setDoc(docRef, { isPublished: monthStatusToggle.checked });
+                showToast(`Mês ${monthStatusToggle.checked ? 'liberado' : 'bloqueado'} com sucesso!`);
+                updateMonthStatusUI();
+            } catch (error) {
+                showToast("Erro ao atualizar status do mês.", true);
+                console.error("Month status update error:", error);
+            }
+        }
+        monthStatusToggle.addEventListener('change', handleMonthStatusToggle);
+
         // --- MODAL LOGIC (AVAILABILITY) ---
         function renderAvailabilityCalendar() {
             const grid = availabilityCalendarGrid;
@@ -593,7 +627,7 @@
             dailyModalTitle.textContent = `Gerir Dia: ${date.toLocaleDateString('pt-BR')}`;
             dailySlotsContainer.innerHTML = `<p class="text-center p-4">Carregando...</p>`;
             dailyAvailabilityModal.classList.remove('hidden');
-            const docId = formatDateToId(date);
+            const docId = formatDateToId(date).substring(0, 7) + '-' + String(date.getDate()).padStart(2, '0');
             const docRef = doc(db, "unavailable_slots", docId);
             const docSnap = await getDoc(docRef);
             if (docSnap.exists()) {
@@ -649,7 +683,7 @@
             if (!selectedDateForDailyManagement) return;
             dailyModalSaveBtn.disabled = true;
             dailyModalSaveBtn.textContent = "Salvando...";
-            const docId = formatDateToId(selectedDateForDailyManagement);
+            const docId = formatDateToId(selectedDateForDailyManagement).substring(0, 7) + '-' + String(selectedDateForDailyManagement.getDate()).padStart(2, '0');
             const docRef = doc(db, "unavailable_slots", docId);
             try {
                 await setDoc(docRef, { blocked_hours: dailyBlockedSlots });
@@ -674,7 +708,7 @@
         // --- MODAL LOGIC (ADD APPOINTMENT) ---
         function openAddAppointmentModal() {
             addAppointmentForm.reset();
-            addDateInput.value = formatDateToId(new Date());
+            addDateInput.value = formatDateToId(new Date()).substring(0, 7) + '-' + String(new Date().getDate()).padStart(2, '0');
             addTimeSelect.innerHTML = '';
             for (let hour = 7; hour <= 21; hour++) {
                 const option = document.createElement('option');
@@ -684,22 +718,18 @@
             }
             addAppointmentModal.classList.remove('hidden');
         }
-
         async function handleAddAppointment(e) {
             e.preventDefault();
             const name = addStudentNameInput.value.trim();
             const dateStr = addDateInput.value;
             const hour = parseInt(addTimeSelect.value, 10);
             const email = addStudentEmailInput.value.trim();
-
             if (!name || !dateStr || isNaN(hour)) {
                 showToast("Nome, data e horário são obrigatórios.", true);
                 return;
             }
-
             const [year, month, day] = dateStr.split('-').map(Number);
             const newTimestamp = new Date(year, month - 1, day, hour);
-
             try {
                 await addDoc(collection(db, "agendamentos"), {
                     alunoNome: name,
@@ -713,13 +743,16 @@
                 console.error("Add appointment error:", error);
             }
         }
-
+        addAppointmentBtn.addEventListener('click', openAddAppointmentModal);
+        addModalCloseBtn.addEventListener('click', () => addAppointmentModal.classList.add('hidden'));
+        addAppointmentForm.addEventListener('submit', handleAddAppointment);
+        
         // --- MODAL LOGIC (EDIT APPOINTMENT) ---
         function openEditAppointmentModal(appointment) {
             currentEditingAppointmentId = appointment.id;
             editStudentName.value = appointment.alunoNome;
             const appointmentDate = appointment.timestamp.toDate();
-            editDateInput.value = formatDateToId(appointmentDate);
+            editDateInput.value = formatDateToId(appointmentDate).substring(0, 7) + '-' + String(appointmentDate.getDate()).padStart(2, '0');
             editTimeSelect.innerHTML = '';
             for (let hour = 7; hour <= 21; hour++) {
                 const option = document.createElement('option');
@@ -783,9 +816,6 @@
                 console.error("Delete error:", error);
             }
         }
-        addAppointmentBtn.addEventListener('click', openAddAppointmentModal);
-        addModalCloseBtn.addEventListener('click', () => addAppointmentModal.classList.add('hidden'));
-        addAppointmentForm.addEventListener('submit', handleAddAppointment);
         editModalCloseBtn.addEventListener('click', () => editAppointmentModal.classList.add('hidden'));
         editSaveBtn.addEventListener('click', handleUpdateAppointment);
         editDeleteBtn.addEventListener('click', showDeleteConfirmation);
