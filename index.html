@@ -420,10 +420,6 @@
                 profileName.textContent = "Samara Lopes";
                 profileEmail.textContent = "samaradeodatolopes@gmail.com";
                 
-                // O código original que buscava os dados do Firebase foi comentado.
-                // if(user.displayName) profileName.textContent = user.displayName;
-                // if(user.email) profileEmail.textContent = user.email;
-
                 listenToAppointments();
             } else {
                 contentWrapper.style.display = 'none';
@@ -458,6 +454,13 @@
             const y = date.getFullYear();
             const m = String(date.getMonth() + 1).padStart(2, '0');
             return `${y}-${m}`;
+        }
+        
+        function toYYYYMMDD(date) {
+            const y = date.getFullYear();
+            const m = String(date.getMonth() + 1).padStart(2, '0');
+            const d = String(date.getDate()).padStart(2, '0');
+            return `${y}-${m}-${d}`;
         }
 
         function showToast(message, isError = false) {
@@ -825,17 +828,43 @@
         dailyModalCloseBtn.addEventListener('click', () => dailyAvailabilityModal.classList.add('hidden'));
         dailyModalSaveBtn.addEventListener('click', saveDailyAvailability);
 
-        // --- MODAL LOGIC (ADD APPOINTMENT) ---
-        function openAddAppointmentModal() {
-            addAppointmentForm.reset();
-            addDateInput.value = formatDateToId(new Date()).substring(0, 7) + '-' + String(new Date().getDate()).padStart(2, '0');
-            addTimeSelect.innerHTML = '';
+        // --- NOVA FUNÇÃO ---
+        // Populates a time slot dropdown, disabling booked times.
+        function populateTimeSlots(selectElement, selectedDateStr, appointmentIdToIgnore = null) {
+            selectElement.innerHTML = '';
+            const [year, month, day] = selectedDateStr.split('-').map(Number);
+            const startOfDay = new Date(year, month - 1, day);
+            const endOfDay = new Date(year, month - 1, day, 23, 59, 59);
+
+            const appointmentsOnDay = allAppointments.filter(app => {
+                const appDate = app.timestamp.toDate();
+                return appDate >= startOfDay && appDate <= endOfDay;
+            });
+
+            const bookedHours = appointmentsOnDay
+                .filter(app => app.id !== appointmentIdToIgnore)
+                .map(app => app.timestamp.toDate().getHours());
+
             for (let hour = 7; hour <= 21; hour++) {
                 const option = document.createElement('option');
                 option.value = hour;
-                option.textContent = `${String(hour).padStart(2, '0')}:00`;
-                addTimeSelect.appendChild(option);
+                const isBooked = bookedHours.includes(hour);
+                if (isBooked) {
+                    option.textContent = `${String(hour).padStart(2, '0')}:00 (Ocupado)`;
+                    option.disabled = true;
+                } else {
+                    option.textContent = `${String(hour).padStart(2, '0')}:00`;
+                }
+                selectElement.appendChild(option);
             }
+        }
+
+        // --- MODAL LOGIC (ADD APPOINTMENT) ---
+        function openAddAppointmentModal() {
+            addAppointmentForm.reset();
+            const todayStr = toYYYYMMDD(new Date());
+            addDateInput.value = todayStr;
+            populateTimeSlots(addTimeSelect, todayStr);
             addAppointmentModal.classList.remove('hidden');
         }
         async function handleAddAppointment(e) {
@@ -866,21 +895,21 @@
         
         addModalCloseBtn.addEventListener('click', () => addAppointmentModal.classList.add('hidden'));
         addAppointmentForm.addEventListener('submit', handleAddAppointment);
+        addDateInput.addEventListener('change', () => {
+            populateTimeSlots(addTimeSelect, addDateInput.value);
+        });
         
         // --- MODAL LOGIC (EDIT APPOINTMENT) ---
         function openEditAppointmentModal(appointment) {
             currentEditingAppointmentId = appointment.id;
             editStudentName.value = appointment.alunoNome;
             const appointmentDate = appointment.timestamp.toDate();
-            editDateInput.value = formatDateToId(appointmentDate).substring(0, 7) + '-' + String(appointmentDate.getDate()).padStart(2, '0');
-            editTimeSelect.innerHTML = '';
-            for (let hour = 7; hour <= 21; hour++) {
-                const option = document.createElement('option');
-                option.value = hour;
-                option.textContent = `${String(hour).padStart(2, '0')}:00`;
-                editTimeSelect.appendChild(option);
-            }
+            const appointmentDateStr = toYYYYMMDD(appointmentDate);
+            editDateInput.value = appointmentDateStr;
+            
+            populateTimeSlots(editTimeSelect, appointmentDateStr, appointment.id);
             editTimeSelect.value = appointmentDate.getHours();
+
             editModalContent.classList.remove('hidden');
             editSaveBtn.classList.remove('hidden');
             editDeleteBtn.classList.remove('hidden');
@@ -941,6 +970,11 @@
         editDeleteBtn.addEventListener('click', showDeleteConfirmation);
         cancelDeleteBtn.addEventListener('click', cancelDelete);
         confirmDeleteBtn.addEventListener('click', handleConfirmDelete);
+        editDateInput.addEventListener('change', () => {
+            if (currentEditingAppointmentId) {
+                populateTimeSlots(editTimeSelect, editDateInput.value, currentEditingAppointmentId);
+            }
+        });
 
     </script>
 </body>
