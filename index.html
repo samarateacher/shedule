@@ -303,10 +303,14 @@
                 <span>Copiar Link</span>
             </button>
             
-            <!-- View Switcher movido para o menu -->
-            <div class="border-t border-gray-200 dark:border-gray-700 pt-4 mt-4">
-                <label for="view-switcher" class="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Visualização</label>
-                <select id="view-switcher" class="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm font-medium bg-white dark:bg-gray-700 dark:text-white hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none"><option value="month">Mês</option><option value="week">Semana</option><option value="day">Dia</option></select>
+            <!-- View Switcher (Desktop) -->
+            <div class="hidden sm:block border-t border-gray-200 dark:border-gray-700 pt-4 mt-4">
+                <label for="view-switcher-desktop" class="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Visualização</label>
+                <select id="view-switcher-desktop" class="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm font-medium bg-white dark:bg-gray-700 dark:text-white hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none">
+                    <option value="month">Mês</option>
+                    <option value="week">Semana</option>
+                    <option value="day">Dia</option>
+                </select>
             </div>
 
             <!-- Interruptor de Tema (Único) -->
@@ -334,7 +338,19 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
                         </svg>
                     </button>
-                    <button id="today-btn" class="border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm font-medium text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700">Hoje</button>
+
+                    <!-- View Switcher (Mobile) -->
+                    <div class="sm:hidden">
+                        <select id="view-switcher-mobile" class="border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm font-medium bg-white dark:bg-gray-700 dark:text-white hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none">
+                            <option value="month">Mês</option>
+                            <option value="week">Semana</option>
+                            <option value="day">Dia</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Botão Hoje (Desktop) -->
+                    <button id="today-btn" class="hidden sm:inline-flex items-center border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm font-medium text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700">Hoje</button>
+                    
                     <div class="flex items-center">
                         <button id="prev-btn" class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-500 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg></button>
                         <button id="next-btn" class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-500 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg></button>
@@ -398,7 +414,8 @@
         const prevBtn = document.getElementById('prev-btn');
         const nextBtn = document.getElementById('next-btn');
         const todayBtn = document.getElementById('today-btn');
-        const viewSwitcher = document.getElementById('view-switcher');
+        const viewSwitcherDesktop = document.getElementById('view-switcher-desktop');
+        const viewSwitcherMobile = document.getElementById('view-switcher-mobile');
         const manageAvailabilityBtn = document.getElementById('manage-availability-btn');
         const copyLinkBtn = document.getElementById('copy-link-btn');
         const profileBtn = document.getElementById('profile-btn');
@@ -678,13 +695,13 @@
                         const moreEl = document.createElement('div');
                         moreEl.className = 'text-xs text-blue-500 font-semibold cursor-pointer';
                         moreEl.textContent = `+${appointmentsForDay.length - 2} a mais`;
-                        moreEl.addEventListener('click', (e) => { e.stopPropagation(); currentDate = dayDate; currentView = 'day'; viewSwitcher.value = 'day'; render(); });
+                        moreEl.addEventListener('click', (e) => { e.stopPropagation(); currentDate = dayDate; updateView('day'); });
                         desktopContainer.appendChild(moreEl);
                     }
                     appointmentsContainer.appendChild(desktopContainer);
 
                     dayCell.appendChild(appointmentsContainer);
-                    dayCell.addEventListener('click', () => { currentDate = dayDate; currentView = 'day'; viewSwitcher.value = 'day'; render(); });
+                    dayCell.addEventListener('click', () => { currentDate = dayDate; updateView('day'); });
                 }
                 mainCalendarGrid.appendChild(dayCell);
             }
@@ -769,10 +786,23 @@
             }
             render();
         }
+        
+        function updateView(newView) {
+            currentView = newView;
+            viewSwitcherDesktop.value = newView;
+            viewSwitcherMobile.value = newView;
+            render();
+        }
+        
+        function handleViewChange(e) {
+            updateView(e.target.value);
+        }
+
         prevBtn.addEventListener('click', () => handleNavigation(-1));
         nextBtn.addEventListener('click', () => handleNavigation(1));
         todayBtn.addEventListener('click', () => { currentDate = new Date(); render(); });
-        viewSwitcher.addEventListener('change', (e) => { currentView = e.target.value; render(); });
+        viewSwitcherDesktop.addEventListener('change', handleViewChange);
+        viewSwitcherMobile.addEventListener('change', handleViewChange);
 
         // --- DATA LISTENER ---
         function listenToAppointments() {
