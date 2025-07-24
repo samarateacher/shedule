@@ -271,17 +271,13 @@
                     <h2 id="main-month-year-header" class="text-lg sm:text-xl text-gray-800 font-semibold whitespace-nowrap"></h2>
                 </div>
                 <div class="flex items-center space-x-2">
-                     <!-- Toggle de Mês Liberado (texto escondido no mobile) -->
-                    <div class="flex items-center space-x-2">
+                     <!-- Container do Toggle de Mês Liberado -->
+                    <div id="month-status-container" class="flex items-center space-x-2">
                         <div class="relative inline-block w-12 align-middle select-none transition duration-200 ease-in">
                             <input type="checkbox" name="toggle" id="month-status-toggle" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer"/>
                             <label for="month-status-toggle" class="toggle-label block overflow-hidden h-6 rounded-full bg-gray-300 cursor-pointer"></label>
                         </div>
                         <span id="month-status-label" class="hidden sm:inline text-sm font-medium text-gray-500">Mês Não Liberado</span>
-                    </div>
-                    <!-- Perfil e View Switcher escondidos no mobile (movidos para o menu) -->
-                    <div class="relative hidden sm:block">
-                         <!-- O botão de perfil original foi movido para a sidebar -->
                     </div>
                 </div>
             </header>
@@ -338,6 +334,7 @@
         const logoutBtnMenu = document.getElementById('logout-btn-menu');
         const monthStatusToggle = document.getElementById('month-status-toggle');
         const monthStatusLabel = document.getElementById('month-status-label');
+        const monthStatusContainer = document.getElementById('month-status-container');
         
         // Modals
         const addAppointmentModal = document.getElementById('add-appointment-modal');
@@ -492,12 +489,22 @@
         
         // --- MAIN RENDER FUNCTION ---
         async function render() {
+            updateControlsVisibility();
             updateHeader();
             await updateMonthStatusUI();
             switch (currentView) {
                 case 'month': renderMonthView(); break;
                 case 'week': renderWeekView(); break;
                 case 'day': renderDayView(); break;
+            }
+        }
+
+        // --- CONTROLS VISIBILITY ---
+        function updateControlsVisibility() {
+            if (currentView === 'month') {
+                monthStatusContainer.classList.remove('hidden');
+            } else {
+                monthStatusContainer.classList.add('hidden');
             }
         }
 
@@ -685,6 +692,7 @@
         
         // --- MONTH STATUS LOGIC ---
         async function updateMonthStatusUI() {
+            if (currentView !== 'month') return;
             const monthId = formatDateToId(currentDate);
             const docRef = doc(db, "month_status", monthId);
             const docSnap = await getDoc(docRef);
