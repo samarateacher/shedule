@@ -6,6 +6,12 @@
     <title>Agendamento de Aulas de Inglês</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Configuração do Tailwind para Dark Mode -->
+    <script>
+        tailwind.config = {
+            darkMode: 'class'
+        }
+    </script>
     <!-- Google Fonts: Inter -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -22,22 +28,31 @@
         .animate-fadeInUp { opacity: 0; animation: fadeInUp 0.6s ease-out forwards; }
         #confirmation-section { transition: all 0.5s ease-in-out; max-height: 0; overflow: hidden; }
         #confirmation-section.show { max-height: 500px; padding-top: 1.5rem; margin-top: 2rem; border-top-width: 1px; }
-        .day.today { background-color: #dbeafe; font-weight: bold; }
+        .day.today { background-color: #dbeafe; }
+        .dark .day.today { background-color: #374151; }
         .day.selected { background-color: #3b82f6 !important; color: white !important; font-weight: bold; }
         .day:not(.disabled):hover { background-color: #eff6ff; }
+        .dark .day:not(.disabled):hover { background-color: #1f2937; }
         .day.disabled { color: #d1d5db; cursor: not-allowed; }
+        .dark .day.disabled { color: #4b5563; }
         .time-slot.selected { background-color: #3b82f6; color: white; border-color: #3b82f6; }
     </style>
 </head>
-<body class="bg-gray-50 text-gray-800">
+<body class="bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-200">
+
+    <!-- Botão de Tema Fixo -->
+    <button id="theme-toggle" class="fixed bottom-4 left-4 z-50 p-3 rounded-full bg-white dark:bg-gray-700 shadow-lg text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:focus:ring-offset-gray-900">
+        <svg id="theme-icon-sun" class="h-6 w-6 hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
+        <svg id="theme-icon-moon" class="h-6 w-6 hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" /></svg>
+    </button>
 
     <!-- Modal de Pré-Confirmação -->
     <div id="pre-confirmation-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center hidden">
-        <div class="bg-white rounded-lg shadow-xl p-6 w-11/12 max-w-sm text-center animate-fadeInUp">
-            <h3 class="text-xl font-bold mb-2">Confirmar Agendamento?</h3>
-            <p id="pre-confirmation-message" class="text-gray-600 mb-6"></p>
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 w-11/12 max-w-sm text-center animate-fadeInUp">
+            <h3 class="text-xl font-bold mb-2 text-gray-900 dark:text-gray-100">Confirmar Agendamento?</h3>
+            <p id="pre-confirmation-message" class="text-gray-600 dark:text-gray-400 mb-6"></p>
             <div class="flex justify-center space-x-4">
-                <button id="pre-confirmation-cancel-btn" class="bg-gray-300 text-gray-800 font-bold py-2 px-6 rounded-lg hover:bg-gray-400 transition-colors">
+                <button id="pre-confirmation-cancel-btn" class="bg-gray-300 dark:bg-gray-600 text-gray-800 dark:text-gray-200 font-bold py-2 px-6 rounded-lg hover:bg-gray-400 dark:hover:bg-gray-500 transition-colors">
                     Cancelar
                 </button>
                 <button id="pre-confirmation-confirm-btn" class="bg-blue-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-blue-700 transition-colors">
@@ -49,10 +64,10 @@
 
     <!-- Modal de Notificação Final -->
     <div id="notification-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center hidden">
-        <div class="bg-white rounded-lg shadow-xl p-6 w-11/12 max-w-sm text-center animate-fadeInUp">
-            <h3 id="notification-title" class="text-xl font-bold mb-2"></h3>
-            <p id="notification-message" class="text-gray-600 mb-6"></p>
-            <div id="calendar-links" class="space-y-3 mb-6 border-t pt-4">
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 w-11/12 max-w-sm text-center animate-fadeInUp">
+            <h3 id="notification-title" class="text-xl font-bold mb-2 text-gray-900 dark:text-gray-100"></h3>
+            <p id="notification-message" class="text-gray-600 dark:text-gray-400 mb-6"></p>
+            <div id="calendar-links" class="space-y-3 mb-6 border-t dark:border-gray-700 pt-4">
                 <!-- Links do calendário serão inseridos aqui -->
             </div>
             <button id="notification-close-btn" class="bg-gray-500 text-white font-bold py-2 px-6 rounded-lg hover:bg-gray-600 transition-colors">
@@ -61,7 +76,7 @@
         </div>
     </div>
 
-    <header id="page-header" class="bg-white shadow-md sticky top-0 z-40">
+    <header id="page-header" class="bg-white dark:bg-gray-800 shadow-md sticky top-0 z-40">
         <div class="container mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex items-center justify-between h-32">
                 <img src="https://lh3.googleusercontent.com/pw/AP1GczPppZOenl7VdNbTItNTFDiKID9a1GZNy65Z5J696zptbeQifQ7hGv04MupxDzgpFksynXNMKerzZfMOy2xQjOFvDDyXpwYirWq0l2hJwe59wm_ZKRIn6EFcRro5zw63w3OCRoPVV8CMSWi2u6P2IoKfCg=w500-h500-s-no-gm?authuser=0" 
@@ -76,49 +91,49 @@
 
     <div class="container mx-auto p-4 sm:p-6 lg:p-8">
         <div class="text-center pt-8 mb-10 animate-fadeInUp" style="animation-delay: 0.1s;">
-            <h1 class="text-3xl sm:text-4xl font-bold text-gray-900">Agende sua Aula de Inglês</h1>
+            <h1 class="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-gray-100">Agende sua Aula de Inglês</h1>
         </div>
 
-        <main class="max-w-4xl mx-auto bg-white p-6 sm:p-8 rounded-2xl shadow-lg animate-fadeInUp" style="animation-delay: 0.3s;">
+        <main class="max-w-4xl mx-auto bg-white dark:bg-gray-800 p-6 sm:p-8 rounded-2xl shadow-lg animate-fadeInUp" style="animation-delay: 0.3s;">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <div class="border-r-0 md:border-r border-gray-200 md:pr-8">
+                <div class="border-r-0 md:border-r border-gray-200 dark:border-gray-700 md:pr-8">
                     <h2 class="text-xl font-semibold mb-4">Escolha uma data</h2>
-                    <div class="bg-gray-100 p-4 rounded-lg">
+                    <div class="bg-gray-100 dark:bg-gray-700/50 p-4 rounded-lg">
                         <div class="flex items-center justify-between mb-4">
-                            <button id="prev-month-btn" class="p-2 rounded-full hover:bg-gray-200 transition-colors">
+                            <button id="prev-month-btn" class="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
                             </button>
                             <h3 id="month-year-header" class="font-semibold text-lg"></h3>
-                            <button id="next-month-btn" class="p-2 rounded-full hover:bg-gray-200 transition-colors">
+                            <button id="next-month-btn" class="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
                             </button>
                         </div>
                         <div id="calendar-grid" class="grid grid-cols-7 gap-2 text-center text-sm">
-                            <div class="font-medium text-gray-500">D</div><div class="font-medium text-gray-500">S</div><div class="font-medium text-gray-500">T</div><div class="font-medium text-gray-500">Q</div><div class="font-medium text-gray-500">Q</div><div class="font-medium text-gray-500">S</div><div class="font-medium text-gray-500">S</div>
+                            <div class="font-medium text-gray-500 dark:text-gray-400">D</div><div class="font-medium text-gray-500 dark:text-gray-400">S</div><div class="font-medium text-gray-500 dark:text-gray-400">T</div><div class="font-medium text-gray-500 dark:text-gray-400">Q</div><div class="font-medium text-gray-500 dark:text-gray-400">Q</div><div class="font-medium text-gray-500 dark:text-gray-400">S</div><div class="font-medium text-gray-500 dark:text-gray-400">S</div>
                         </div>
                     </div>
                 </div>
 
                 <div>
                     <h2 id="horarios-title" class="text-xl font-semibold mb-4">Escolha um horário</h2>
-                    <p id="selected-date-text" class="text-gray-600 mb-4">Selecione uma data para ver os horários</p>
+                    <p id="selected-date-text" class="text-gray-600 dark:text-gray-400 mb-4">Selecione uma data para ver os horários</p>
                     <div id="available-times" class="max-h-80 overflow-y-auto space-y-2 pr-4">
                         <!-- Horários serão inseridos aqui -->
                     </div>
                 </div>
             </div>
 
-            <div id="confirmation-section" class="border-gray-200">
+            <div id="confirmation-section" class="border-gray-200 dark:border-gray-700">
                 <div class="animate-fadeInUp">
                     <h2 class="text-xl font-semibold mb-4">Confirme seus dados</h2>
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
-                            <label for="name" class="block text-sm font-medium text-gray-700">Nome</label>
-                            <input type="text" id="name" class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" required>
+                            <label for="name" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Nome</label>
+                            <input type="text" id="name" class="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" required>
                         </div>
                         <div>
-                            <label for="email" class="block text-sm font-medium text-gray-700">Email</label>
-                            <input type="email" id="email" class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" required>
+                            <label for="email" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Email</label>
+                            <input type="email" id="email" class="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" required>
                         </div>
                     </div>
                     <div class="mt-6 text-right">
@@ -130,7 +145,7 @@
             </div>
         </main>
 
-        <footer class="text-center mt-10 text-gray-500 text-sm animate-fadeIn" style="animation-delay: 0.5s;">
+        <footer class="text-center mt-10 text-gray-500 dark:text-gray-400 text-sm animate-fadeIn" style="animation-delay: 0.5s;">
             <p>&copy; 2025 <span id="teacher-name-footer">Samara</span> - Aulas de Inglês. Todos os direitos reservados.</p>
         </footer>
     </div>
@@ -183,6 +198,35 @@
         const preConfirmationMessage = document.getElementById('pre-confirmation-message');
         const preConfirmationCancelBtn = document.getElementById('pre-confirmation-cancel-btn');
         const preConfirmationConfirmBtn = document.getElementById('pre-confirmation-confirm-btn');
+        const themeToggle = document.getElementById('theme-toggle');
+        const themeIconSun = document.getElementById('theme-icon-sun');
+        const themeIconMoon = document.getElementById('theme-icon-moon');
+
+        // --- LÓGICA DO TEMA ---
+        const applyTheme = (isDark) => {
+            if (isDark) {
+                document.documentElement.classList.add('dark');
+                themeIconSun.classList.remove('hidden');
+                themeIconMoon.classList.add('hidden');
+            } else {
+                document.documentElement.classList.remove('dark');
+                themeIconSun.classList.add('hidden');
+                themeIconMoon.classList.remove('hidden');
+            }
+            localStorage.setItem('theme', isDark ? 'dark' : 'light');
+        };
+
+        const themeCheck = () => {
+            const userTheme = localStorage.getItem('theme');
+            const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            applyTheme(userTheme === 'dark' || (!userTheme && systemTheme));
+        };
+
+        themeToggle.addEventListener('click', () => {
+            const isDark = document.documentElement.classList.contains('dark');
+            applyTheme(!isDark);
+        });
+        // --- FIM DA LÓGICA DO TEMA ---
 
         function showNotification(title, message, calendarData = null) {
             notificationTitle.textContent = title;
@@ -230,7 +274,7 @@
         }
 
         async function renderCalendar() {
-            calendarGrid.innerHTML = `<div class="font-medium text-gray-500">D</div><div class="font-medium text-gray-500">S</div><div class="font-medium text-gray-500">T</div><div class="font-medium text-gray-500">Q</div><div class="font-medium text-gray-500">Q</div><div class="font-medium text-gray-500">S</div><div class="font-medium text-gray-500">S</div>`;
+            calendarGrid.innerHTML = `<div class="font-medium text-gray-500 dark:text-gray-400">D</div><div class="font-medium text-gray-500 dark:text-gray-400">S</div><div class="font-medium text-gray-500 dark:text-gray-400">T</div><div class="font-medium text-gray-500 dark:text-gray-400">Q</div><div class="font-medium text-gray-500 dark:text-gray-400">Q</div><div class="font-medium text-gray-500 dark:text-gray-400">S</div><div class="font-medium text-gray-500 dark:text-gray-400">S</div>`;
             const month = currentDate.getMonth();
             const year = currentDate.getFullYear();
             monthYearHeader.textContent = `${currentDate.toLocaleString('pt-BR', { month: 'long' })} ${year}`;
@@ -252,7 +296,7 @@
                 if (dayDate < today.setHours(0,0,0,0) || !isMonthPublished) {
                     dayEl.classList.add('disabled');
                 } else {
-                    dayEl.classList.add('cursor-pointer', 'hover:bg-blue-100');
+                    dayEl.classList.add('cursor-pointer');
                     dayEl.addEventListener('click', () => selectDay(dayDate));
                 }
                 if (dayDate.toDateString() === today.toDateString()) { dayEl.classList.add('today'); }
@@ -260,7 +304,7 @@
                 calendarGrid.appendChild(dayEl);
             }
             if (!isMonthPublished) {
-                availableTimesContainer.innerHTML = '<p class="text-gray-500 text-center">Agendamentos para este mês ainda não liberados.</p>';
+                availableTimesContainer.innerHTML = '<p class="text-gray-500 dark:text-gray-400 text-center">Agendamentos para este mês ainda não liberados.</p>';
             }
         }
 
@@ -270,12 +314,12 @@
             renderCalendar();
             confirmationSection.classList.remove('show');
             const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-            selectedDateText.innerHTML = `Horários para <span class="font-bold text-blue-600">${date.toLocaleDateString('pt-BR', options)}</span>`;
+            selectedDateText.innerHTML = `Horários para <span class="font-bold text-blue-600 dark:text-blue-400">${date.toLocaleDateString('pt-BR', options)}</span>`;
             await renderAvailableTimes(date);
         }
 
         async function renderAvailableTimes(date) {
-            availableTimesContainer.innerHTML = '<p class="text-gray-500">Carregando horários...</p>';
+            availableTimesContainer.innerHTML = '<p class="text-gray-500 dark:text-gray-400">Carregando horários...</p>';
             const startOfDay = new Date(date);
             startOfDay.setHours(0, 0, 0, 0);
             const endOfDay = new Date(date);
@@ -312,14 +356,14 @@
                         const timeSlot = document.createElement('button');
                         timeSlot.classList.add('w-full', 'text-center', 'p-3', 'border', 'rounded-lg', 'transition-all', 'duration-200', 'ease-in-out', 'time-slot');
                         timeSlot.textContent = `${String(hour).padStart(2, '0')}:00 - ${String(hour + 1).padStart(2, '0')}:00`;
-                        timeSlot.classList.add('border-gray-300', 'hover:bg-blue-500', 'hover:text-white', 'hover:border-blue-500', 'transform', 'hover:scale-105');
+                        timeSlot.classList.add('border-gray-300', 'dark:border-gray-600', 'hover:bg-blue-500', 'hover:text-white', 'hover:border-blue-500', 'transform', 'hover:scale-105');
                         timeSlot.addEventListener('click', () => selectTime(hour, timeSlot));
                         availableTimesContainer.appendChild(timeSlot);
                     }
                 }
                 
                 if (!hasAvailableSlots) {
-                     availableTimesContainer.innerHTML = '<p class="text-gray-500 text-center">Nenhum horário disponível para este dia.</p>';
+                     availableTimesContainer.innerHTML = '<p class="text-gray-500 dark:text-gray-400 text-center">Nenhum horário disponível para este dia.</p>';
                 }
 
                 // Rola para a seção de horários em telas pequenas, APÓS carregar
@@ -410,7 +454,10 @@
         preConfirmationCancelBtn.addEventListener('click', () => preConfirmationModal.classList.add('hidden'));
         preConfirmationConfirmBtn.addEventListener('click', finalizeBooking);
         
-        window.onload = () => { renderCalendar(); };
+        window.onload = () => { 
+            renderCalendar();
+            themeCheck();
+        };
     </script>
 </body>
 </html>
