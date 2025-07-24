@@ -195,7 +195,11 @@
             </div>
         </div>
 
-        <aside class="w-64 border-r border-gray-200 p-4 flex flex-col flex-shrink-0 hidden sm:flex">
+        <!-- ***** ALTERAÇÃO PARA MOBILE ***** -->
+        <!-- A sidebar foi modificada para se comportar como um menu lateral no mobile -->
+        <!-- ID adicionado: 'mobile-sidebar' -->
+        <!-- Classes alteradas para posicionamento fixo, transição e responsividade -->
+        <aside id="mobile-sidebar" class="fixed top-0 left-0 h-full w-64 bg-white border-r border-gray-200 p-4 flex flex-col flex-shrink-0 z-40 transform -translate-x-full transition-transform duration-300 ease-in-out sm:relative sm:translate-x-0 sm:flex">
             <div class="mb-6"><h1 class="text-2xl font-bold text-blue-600">Minha Agenda</h1></div>
             <button id="add-appointment-btn" class="w-full bg-blue-500 text-white font-semibold py-3 px-4 rounded-xl shadow-md hover:bg-blue-600 transition-colors flex items-center justify-center space-x-2 mb-4">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" /></svg>
@@ -215,9 +219,20 @@
             </div>
         </aside>
 
+        <!-- ***** NOVO ELEMENTO ***** -->
+        <!-- Overlay para escurecer o fundo quando o menu mobile estiver aberto -->
+        <div id="mobile-menu-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-30 hidden sm:hidden"></div>
+
         <div class="flex-1 flex flex-col">
             <header class="h-16 flex-shrink-0 flex items-center justify-between border-b border-gray-200 px-6">
                 <div class="flex items-center space-x-4">
+                    <!-- ***** NOVO ELEMENTO ***** -->
+                    <!-- Botão do menu hambúrguer, visível apenas no mobile (sm:hidden) -->
+                    <button id="mobile-menu-btn" class="p-2 rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100 sm:hidden">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                        </svg>
+                    </button>
                     <button id="today-btn" class="border border-gray-300 rounded-lg px-4 py-2 text-sm font-medium hover:bg-gray-100">Hoje</button>
                     <div class="flex items-center">
                         <button id="prev-btn" class="p-2 rounded-full hover:bg-gray-100"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg></button>
@@ -329,6 +344,43 @@
         const cancelDeleteBtn = document.getElementById('cancel-delete-btn');
         const confirmDeleteBtn = document.getElementById('confirm-delete-btn');
 
+        // --- ***** NOVO BLOCO DE CÓDIGO PARA O MENU MOBILE ***** ---
+        // --- MOBILE MENU ELEMENTS ---
+        const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+        const mobileSidebar = document.getElementById('mobile-sidebar');
+        const mobileMenuOverlay = document.getElementById('mobile-menu-overlay');
+
+        function toggleMobileMenu() {
+            mobileSidebar.classList.toggle('-translate-x-full');
+            mobileMenuOverlay.classList.toggle('hidden');
+        }
+
+        // --- MOBILE MENU EVENT LISTENERS ---
+        mobileMenuBtn.addEventListener('click', toggleMobileMenu);
+        mobileMenuOverlay.addEventListener('click', toggleMobileMenu);
+        // Fecha o menu ao clicar em uma das opções principais
+        addAppointmentBtn.addEventListener('click', () => {
+             if (!mobileSidebar.classList.contains('-translate-x-full')) {
+                toggleMobileMenu();
+             }
+             openAddAppointmentModal();
+        });
+        manageAvailabilityBtn.addEventListener('click', () => {
+            if (!mobileSidebar.classList.contains('-translate-x-full')) {
+                toggleMobileMenu();
+            }
+            availabilityModal.classList.remove('hidden'); 
+            renderAvailabilityCalendar();
+        });
+        copyLinkBtn.addEventListener('click', () => {
+            if (!mobileSidebar.classList.contains('-translate-x-full')) {
+                toggleMobileMenu();
+            }
+            handleCopyLink();
+        });
+        // --- FIM DO BLOCO DE CÓDIGO PARA O MENU MOBILE ---
+
+
         // --- AUTH LOGIC ---
         onAuthStateChanged(auth, (user) => {
             loadingScreen.style.display = 'none';
@@ -388,7 +440,7 @@
             }
             document.body.removeChild(textArea);
         }
-        copyLinkBtn.addEventListener('click', handleCopyLink);
+        // copyLinkBtn.addEventListener('click', handleCopyLink); // Removido para ser tratado no novo bloco mobile
 
         // --- MAIN RENDER FUNCTION ---
         async function render() {
@@ -421,7 +473,7 @@
         function renderMonthView() {
             calendarContainer.innerHTML = `
                 <div id="calendar-header" class="grid grid-cols-7 sticky top-0 bg-white z-10">
-                    <div class="text-center text-sm font-medium text-gray-500 border-r border-b border-gray-200 py-2">DOM</div><div class="text-center text-sm font-medium text-gray-500 border-r border-b border-gray-200 py-2">SEG</div><div class="text-center text-sm font-medium text-gray-500 border-r border-b border-gray-200 py-2">TER</div><div class="text-center text-sm font-medium text-gray-500 border-r border-b border-gray-200 py-2">QUA</div><div class="text-center text-sm font-medium text-gray-500 border-r border-b border-gray-200 py-2">QUI</div><div class="text-center text-sm font-medium text-gray-500 border-r border-b border-gray-200 py-2">SEX</div><div class="text-center text-sm font-medium text-gray-500 border-b border-gray-200 py-2">SÁB</div>
+                    <div class="text-center text-xs sm:text-sm font-medium text-gray-500 border-r border-b border-gray-200 py-2">DOM</div><div class="text-center text-xs sm:text-sm font-medium text-gray-500 border-r border-b border-gray-200 py-2">SEG</div><div class="text-center text-xs sm:text-sm font-medium text-gray-500 border-r border-b border-gray-200 py-2">TER</div><div class="text-center text-xs sm:text-sm font-medium text-gray-500 border-r border-b border-gray-200 py-2">QUA</div><div class="text-center text-xs sm:text-sm font-medium text-gray-500 border-r border-b border-gray-200 py-2">QUI</div><div class="text-center text-xs sm:text-sm font-medium text-gray-500 border-r border-b border-gray-200 py-2">SEX</div><div class="text-center text-xs sm:text-sm font-medium text-gray-500 border-b border-gray-200 py-2">SÁB</div>
                 </div>
                 <div id="calendar-grid-main" class="grid grid-cols-7 h-full"></div>`;
             const mainCalendarGrid = document.getElementById('calendar-grid-main');
@@ -434,7 +486,7 @@
             for (let i = 1; i <= daysInMonth; i++) {
                 const dayDate = new Date(year, month, i);
                 const dayCell = document.createElement('div');
-                dayCell.className = 'day-cell border-r border-b border-gray-200 p-2 relative';
+                dayCell.className = 'day-cell border-r border-b border-gray-200 p-1 sm:p-2 relative';
                 if (dayDate.getDay() === 0 || dayDate.getDay() === 6) { dayCell.classList.add('bg-gray-50'); }
                 const dayNumber = document.createElement('span');
                 dayNumber.textContent = i;
@@ -449,7 +501,7 @@
                         const appEl = document.createElement('div');
                         appEl.className = 'bg-green-100 border-l-4 border-green-500 text-green-800 p-1 rounded-r-md text-xs cursor-pointer hover:bg-green-200 truncate';
                         const appTime = app.timestamp.toDate().getHours();
-                        appEl.innerHTML = `<strong>${String(appTime).padStart(2, '0')}:00</strong> ${app.alunoNome}`;
+                        appEl.innerHTML = `<strong class="hidden sm:inline">${String(appTime).padStart(2, '0')}:00</strong> ${app.alunoNome}`;
                         appEl.addEventListener('click', () => openEditAppointmentModal(app));
                         appointmentsContainer.appendChild(appEl);
                     });
@@ -476,7 +528,7 @@
             for (let i = 0; i < 7; i++) {
                 const day = new Date(startOfWeek);
                 day.setDate(day.getDate() + i);
-                grid.innerHTML += `<div class="sticky top-0 bg-white z-10 text-center p-2 border-b border-l"><div class="text-xs text-gray-500">${day.toLocaleDateString('pt-BR', { weekday: 'short' }).toUpperCase()}</div><div class="text-2xl font-semibold">${day.getDate()}</div></div>`;
+                grid.innerHTML += `<div class="sticky top-0 bg-white z-10 text-center p-2 border-b border-l"><div class="text-xs text-gray-500">${day.toLocaleDateString('pt-BR', { weekday: 'short' }).toUpperCase()}</div><div class="text-lg sm:text-2xl font-semibold">${day.getDate()}</div></div>`;
             }
             for (let hour = 7; hour <= 21; hour++) {
                 grid.innerHTML += `<div class="relative text-right pr-2 text-xs text-gray-500"><span class="absolute -top-2 right-2 bg-white px-1 z-10">${hour}:00</span></div>`;
@@ -697,7 +749,7 @@
                 dailyModalSaveBtn.textContent = "Salvar Dia";
             }
         }
-        manageAvailabilityBtn.addEventListener('click', () => { availabilityModal.classList.remove('hidden'); renderAvailabilityCalendar(); });
+        // manageAvailabilityBtn.addEventListener('click', () => { availabilityModal.classList.remove('hidden'); renderAvailabilityCalendar(); });
         modalCloseBtn.addEventListener('click', () => availabilityModal.classList.add('hidden'));
         modalDoneBtn.addEventListener('click', () => availabilityModal.classList.add('hidden'));
         availabilityPrevMonthBtn.addEventListener('click', () => { availabilityCalendarDate.setMonth(availabilityCalendarDate.getMonth() - 1); renderAvailabilityCalendar(); });
@@ -743,7 +795,7 @@
                 console.error("Add appointment error:", error);
             }
         }
-        addAppointmentBtn.addEventListener('click', openAddAppointmentModal);
+        // addAppointmentBtn.addEventListener('click', openAddAppointmentModal);
         addModalCloseBtn.addEventListener('click', () => addAppointmentModal.classList.add('hidden'));
         addAppointmentForm.addEventListener('submit', handleAddAppointment);
         
