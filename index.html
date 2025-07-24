@@ -6,6 +6,17 @@
     <title>Admin - Agenda de Aulas</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Configuração do Tailwind para Dark Mode -->
+    <script>
+        tailwind.config = {
+            darkMode: 'class', // Habilita o modo escuro baseado em uma classe no elemento <html>
+            theme: {
+                extend: {
+                    // Você pode adicionar extensões de tema aqui se necessário
+                }
+            }
+        }
+    </script>
     <!-- Google Fonts: Inter -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -56,9 +67,60 @@
                 grid-template-columns: 60px 1fr;
             }
          }
+        /* Estilos para o Interruptor de Tema */
+        .theme-switch-wrapper {
+            display: flex;
+            align-items: center;
+        }
+        .theme-switch {
+            display: inline-block;
+            height: 24px;
+            position: relative;
+            width: 44px;
+        }
+        .theme-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .slider {
+            background-color: #ccc;
+            bottom: 0;
+            cursor: pointer;
+            left: 0;
+            position: absolute;
+            right: 0;
+            top: 0;
+            transition: .4s;
+        }
+        .slider:before {
+            background-color: white;
+            bottom: 4px;
+            content: "";
+            height: 16px;
+            left: 4px;
+            position: absolute;
+            transition: .4s;
+            width: 16px;
+        }
+        input:checked + .slider {
+            background-color: #3b82f6;
+        }
+        input:focus + .slider {
+            box-shadow: 0 0 1px #3b82f6;
+        }
+        input:checked + .slider:before {
+            transform: translateX(20px);
+        }
+        .slider.round {
+            border-radius: 24px;
+        }
+        .slider.round:before {
+            border-radius: 50%;
+        }
     </style>
 </head>
-<body class="bg-gray-100">
+<body class="bg-gray-100 dark:bg-gray-900">
 
     <!-- Toast de Confirmação -->
     <div id="toast-notification" class="fixed top-5 right-5 bg-green-500 text-white py-2 px-4 rounded-lg shadow-lg opacity-0 transform translate-x-full pointer-events-none z-[80]">
@@ -67,17 +129,17 @@
 
     <!-- Tela de Login -->
     <div id="login-container" class="flex items-center justify-center h-screen hidden-by-default">
-        <div class="w-full max-w-md bg-white rounded-2xl shadow-lg p-8">
-            <h2 class="text-2xl font-bold text-center text-gray-800 mb-2">Acesso Restrito</h2>
-            <p class="text-center text-gray-500 mb-8">Faça login para gerenciar sua agenda.</p>
+        <div class="w-full max-w-md bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-8">
+            <h2 class="text-2xl font-bold text-center text-gray-800 dark:text-gray-100 mb-2">Acesso Restrito</h2>
+            <p class="text-center text-gray-500 dark:text-gray-400 mb-8">Faça login para gerenciar sua agenda.</p>
             <form id="login-form">
                 <div class="mb-4">
-                    <label for="email" class="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                    <input type="email" id="email" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                    <label for="email" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email</label>
+                    <input type="email" id="email" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 dark:text-white" required>
                 </div>
                 <div class="mb-6">
-                    <label for="password" class="block text-sm font-medium text-gray-700 mb-1">Senha</label>
-                    <input type="password" id="password" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                    <label for="password" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Senha</label>
+                    <input type="password" id="password" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 dark:text-white" required>
                 </div>
                 <p id="error-message" class="text-red-500 text-sm text-center mb-4 hidden"></p>
                 <button type="submit" id="login-btn" class="w-full bg-blue-600 text-white font-bold py-3 rounded-lg hover:bg-blue-700 transition-colors">
@@ -89,36 +151,36 @@
 
     <!-- Tela de Carregamento -->
     <div id="loading-screen" class="flex items-center justify-center h-screen">
-        <p class="text-lg text-gray-600">Verificando autenticação...</p>
+        <p class="text-lg text-gray-600 dark:text-gray-400">Verificando autenticação...</p>
     </div>
     
     <!-- Conteúdo Principal do Admin -->
-    <div id="content-wrapper" class="flex h-screen overflow-hidden bg-white hidden-by-default">
+    <div id="content-wrapper" class="flex h-screen overflow-hidden bg-white dark:bg-gray-800 hidden-by-default">
         <!-- Modal de Adicionar Agendamento -->
         <div id="add-appointment-modal" class="fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center hidden">
-            <div class="bg-white rounded-lg shadow-xl p-8 w-11/12 max-w-md animate-fadeInUp">
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-8 w-11/12 max-w-md animate-fadeInUp">
                 <div class="flex justify-between items-center mb-4">
-                    <h3 class="text-xl font-bold">Adicionar Agendamento</h3>
-                    <button id="add-modal-close-btn" class="p-2 rounded-full hover:bg-gray-200">
+                    <h3 class="text-xl font-bold text-gray-800 dark:text-gray-100">Adicionar Agendamento</h3>
+                    <button id="add-modal-close-btn" class="p-2 rounded-full text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
                     </button>
                 </div>
                 <form id="add-appointment-form">
                     <div class="mb-4">
-                        <label for="add-student-name" class="block text-sm font-medium text-gray-700">Nome do Aluno</label>
-                        <input type="text" id="add-student-name" class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm" required>
+                        <label for="add-student-name" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Nome do Aluno</label>
+                        <input type="text" id="add-student-name" class="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-gray-900 dark:text-white" required>
                     </div>
                     <div class="mb-4">
-                        <label for="add-date" class="block text-sm font-medium text-gray-700">Data</label>
-                        <input type="date" id="add-date" class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm" required>
+                        <label for="add-date" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Data</label>
+                        <input type="date" id="add-date" class="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-gray-900 dark:text-white" required>
                     </div>
                     <div class="mb-4">
-                        <label for="add-time" class="block text-sm font-medium text-gray-700">Horário</label>
-                        <select id="add-time" class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm" required></select>
+                        <label for="add-time" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Horário</label>
+                        <select id="add-time" class="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-gray-900 dark:text-white" required></select>
                     </div>
                     <div class="mb-4">
-                        <label for="add-student-email" class="block text-sm font-medium text-gray-700">Email do Aluno (Opcional)</label>
-                        <input type="email" id="add-student-email" class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm">
+                        <label for="add-student-email" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Email do Aluno (Opcional)</label>
+                        <input type="email" id="add-student-email" class="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-gray-900 dark:text-white">
                     </div>
                     <div class="text-right mt-8">
                         <button type="submit" class="bg-blue-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-blue-700">Salvar Agendamento</button>
@@ -129,21 +191,21 @@
 
         <!-- Modal de Gerenciamento de Disponibilidade (Mensal) -->
         <div id="availability-modal" class="fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center hidden">
-            <div class="bg-white rounded-lg shadow-xl p-8 w-11/12 max-w-xl animate-fadeInUp">
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-8 w-11/12 max-w-xl animate-fadeInUp">
                 <div class="flex justify-between items-center mb-4">
-                    <h3 class="text-xl font-bold">Gerir Disponibilidade</h3>
-                    <button id="modal-close-btn" class="p-2 rounded-full hover:bg-gray-200">
+                    <h3 class="text-xl font-bold text-gray-800 dark:text-gray-100">Gerir Disponibilidade</h3>
+                    <button id="modal-close-btn" class="p-2 rounded-full text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
                     </button>
                 </div>
-                <p class="text-gray-600 mb-6">Selecione um dia para gerenciar os horários específicos.</p>
+                <p class="text-gray-600 dark:text-gray-400 mb-6">Selecione um dia para gerenciar os horários específicos.</p>
                 <div id="availability-calendar-container">
                     <div class="flex items-center justify-between mb-4">
-                        <button id="availability-prev-month-btn" class="p-2 rounded-full hover:bg-gray-200">&lt;</button>
-                        <h3 id="availability-month-year-header" class="font-semibold text-lg"></h3>
-                        <button id="availability-next-month-btn" class="p-2 rounded-full hover:bg-gray-200">&gt;</button>
+                        <button id="availability-prev-month-btn" class="p-2 rounded-full text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700">&lt;</button>
+                        <h3 id="availability-month-year-header" class="font-semibold text-lg text-gray-800 dark:text-gray-100"></h3>
+                        <button id="availability-next-month-btn" class="p-2 rounded-full text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700">&gt;</button>
                     </div>
-                    <div id="availability-calendar-grid" class="grid grid-cols-7 gap-2 text-center text-sm"></div>
+                    <div id="availability-calendar-grid" class="grid grid-cols-7 gap-2 text-center text-sm text-gray-700 dark:text-gray-300"></div>
                 </div>
                 <div class="text-right mt-8">
                     <button id="modal-done-btn" class="bg-gray-500 text-white font-bold py-2 px-6 rounded-lg hover:bg-gray-600 transition-colors">Fechar</button>
@@ -153,21 +215,21 @@
 
         <!-- Modal de Gerenciamento de Horários Diários -->
         <div id="daily-availability-modal" class="fixed inset-0 bg-black bg-opacity-70 z-[60] flex items-center justify-center hidden">
-            <div class="bg-white rounded-lg shadow-xl p-8 w-11/12 max-w-md animate-fadeInUp">
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-8 w-11/12 max-w-md animate-fadeInUp">
                 <div class="flex justify-between items-center mb-4">
-                    <h3 id="daily-modal-title" class="text-xl font-bold">Gerir Horários</h3>
-                    <button id="daily-modal-close-btn" class="p-2 rounded-full hover:bg-gray-200">
+                    <h3 id="daily-modal-title" class="text-xl font-bold text-gray-800 dark:text-gray-100">Gerir Horários</h3>
+                    <button id="daily-modal-close-btn" class="p-2 rounded-full text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700">
                          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
                     </button>
                 </div>
-                <div class="flex items-center justify-between bg-gray-100 p-3 rounded-lg mb-4">
-                    <span class="font-medium text-gray-700">Disponibilidade do dia</span>
+                <div class="flex items-center justify-between bg-gray-100 dark:bg-gray-700 p-3 rounded-lg mb-4">
+                    <span class="font-medium text-gray-700 dark:text-gray-200">Disponibilidade do dia</span>
                     <div class="relative inline-block w-12 mr-2 align-middle select-none transition duration-200 ease-in">
                         <input type="checkbox" name="toggle" id="day-availability-toggle" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer"/>
-                        <label for="day-availability-toggle" class="toggle-label block overflow-hidden h-6 rounded-full bg-gray-300 cursor-pointer"></label>
+                        <label for="day-availability-toggle" class="toggle-label block overflow-hidden h-6 rounded-full bg-gray-300 dark:bg-gray-600 cursor-pointer"></label>
                     </div>
                 </div>
-                <p class="text-gray-600 mb-6">Ou clique nos horários individuais para bloquear/desbloquear.</p>
+                <p class="text-gray-600 dark:text-gray-400 mb-6">Ou clique nos horários individuais para bloquear/desbloquear.</p>
                 <div id="daily-slots-container" class="max-h-72 overflow-y-auto space-y-2 pr-2"></div>
                 <div class="text-right mt-8">
                     <button id="daily-modal-save-btn" class="bg-blue-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-blue-700">Salvar Dia</button>
@@ -177,30 +239,30 @@
         
         <!-- Modal de Edição de Agendamento -->
         <div id="edit-appointment-modal" class="fixed inset-0 bg-black bg-opacity-70 z-[70] flex items-center justify-center hidden">
-            <div class="bg-white rounded-lg shadow-xl p-8 w-11/12 max-w-md animate-fadeInUp">
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-8 w-11/12 max-w-md animate-fadeInUp">
                 <div class="flex justify-between items-center mb-4">
-                    <h3 class="text-xl font-bold">Editar Agendamento</h3>
-                    <button id="edit-modal-close-btn" class="p-2 rounded-full hover:bg-gray-200">
+                    <h3 class="text-xl font-bold text-gray-800 dark:text-gray-100">Editar Agendamento</h3>
+                    <button id="edit-modal-close-btn" class="p-2 rounded-full text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700">
                          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
                     </button>
                 </div>
                 <div id="edit-modal-content">
                     <div class="mb-4">
-                        <label for="edit-student-name" class="block text-sm font-medium text-gray-700">Nome do Aluno</label>
-                        <input type="text" id="edit-student-name" class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm">
+                        <label for="edit-student-name" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Nome do Aluno</label>
+                        <input type="text" id="edit-student-name" class="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-gray-900 dark:text-white">
                     </div>
                     <div class="mb-4">
-                        <label for="edit-date" class="block text-sm font-medium text-gray-700">Nova Data</label>
-                        <input type="date" id="edit-date" class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm">
+                        <label for="edit-date" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Nova Data</label>
+                        <input type="date" id="edit-date" class="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-gray-900 dark:text-white">
                     </div>
                     <div class="mb-4">
-                        <label for="edit-time" class="block text-sm font-medium text-gray-700">Novo Horário</label>
-                        <select id="edit-time" class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm"></select>
+                        <label for="edit-time" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Novo Horário</label>
+                        <select id="edit-time" class="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-gray-900 dark:text-white"></select>
                     </div>
                 </div>
                 <div id="delete-confirmation-content" class="hidden">
                     <p class="text-center text-lg text-red-600 font-semibold">Tem certeza que deseja excluir este agendamento?</p>
-                    <p class="text-center text-gray-600">Esta ação não pode ser desfeita.</p>
+                    <p class="text-center text-gray-600 dark:text-gray-400">Esta ação não pode ser desfeita.</p>
                 </div>
                 <div class="flex justify-between items-center mt-8">
                     <button id="edit-delete-btn" class="bg-red-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-red-700">Excluir Agendamento</button>
@@ -214,7 +276,7 @@
         </div>
 
         <!-- Sidebar / Menu Mobile -->
-        <aside id="mobile-sidebar" class="fixed top-0 left-0 h-full w-72 bg-white border-r border-gray-200 p-4 flex flex-col flex-shrink-0 z-40 transform -translate-x-full transition-transform duration-300 ease-in-out sm:relative sm:translate-x-0 sm:w-64">
+        <aside id="mobile-sidebar" class="fixed top-0 left-0 h-full w-72 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 p-4 flex flex-col flex-shrink-0 z-40 transform -translate-x-full transition-transform duration-300 ease-in-out sm:relative sm:translate-x-0 sm:w-64">
             <!-- Perfil atualizado com nome/email e classes para truncar texto -->
             <div class="flex items-center space-x-3 mb-6 relative">
                  <button id="profile-btn" class="w-12 h-12 rounded-full overflow-hidden flex-shrink-0">
@@ -222,10 +284,10 @@
                  </button>
                  <!-- Adicionado min-w-0 para permitir o truncamento em um container flex -->
                  <div class="min-w-0">
-                    <h2 class="font-semibold text-gray-800 truncate">Samara Lopes</h2>
-                    <p class="text-sm text-gray-500 truncate">samaradeodatolopes@gmail.com</p>
+                    <h2 class="font-semibold text-gray-800 dark:text-gray-100 truncate">Samara Lopes</h2>
+                    <p class="text-sm text-gray-500 dark:text-gray-400 truncate">samaradeodatolopes@gmail.com</p>
                  </div>
-                 <div id="profile-menu" class="absolute left-0 mt-2 top-full w-48 bg-white rounded-md shadow-lg py-1 z-20 hidden"><a href="#" id="logout-btn-menu" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Sair</a></div>
+                 <div id="profile-menu" class="absolute left-0 mt-2 top-full w-48 bg-white dark:bg-gray-700 rounded-md shadow-lg py-1 z-20 hidden"><a href="#" id="logout-btn-menu" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600">Sair</a></div>
             </div>
 
             <button id="add-appointment-btn" class="w-full bg-blue-500 text-white font-semibold py-3 px-4 rounded-xl shadow-md hover:bg-blue-600 transition-colors flex items-center justify-center space-x-2 mb-4">
@@ -236,48 +298,58 @@
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
                 <span>Gerir Horários</span>
             </button>
-            <button id="copy-link-btn" class="w-full bg-gray-200 text-gray-700 font-semibold py-3 px-4 rounded-xl hover:bg-gray-300 transition-colors flex items-center justify-center space-x-2 mb-6">
+            <button id="copy-link-btn" class="w-full bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-200 font-semibold py-3 px-4 rounded-xl hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors flex items-center justify-center space-x-2 mb-6">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
                 <span>Copiar Link</span>
             </button>
             
             <!-- View Switcher movido para o menu -->
-            <div class="border-t border-gray-200 pt-4 mt-4">
-                <label for="view-switcher" class="block text-sm font-medium text-gray-500 mb-2">Visualização</label>
-                <select id="view-switcher" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm font-medium bg-white hover:bg-gray-50 focus:outline-none"><option value="month">Mês</option><option value="week">Semana</option><option value="day">Dia</option></select>
+            <div class="border-t border-gray-200 dark:border-gray-700 pt-4 mt-4">
+                <label for="view-switcher" class="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Visualização</label>
+                <select id="view-switcher" class="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm font-medium bg-white dark:bg-gray-700 dark:text-white hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none"><option value="month">Mês</option><option value="week">Semana</option><option value="day">Dia</option></select>
             </div>
 
-            <div id="mini-calendar-container" class="mt-auto"></div>
+            <!-- Interruptor de Tema (Único) -->
+            <div class="mt-auto border-t border-gray-200 dark:border-gray-700 pt-4 flex items-center justify-center px-4">
+                <div class="theme-switch-wrapper flex items-center space-x-2">
+                    <svg class="w-6 h-6 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+                    <label class="theme-switch" for="theme-toggle-input">
+                        <input type="checkbox" id="theme-toggle-input">
+                        <span class="slider round"></span>
+                    </label>
+                    <svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg>
+                </div>
+            </div>
         </aside>
 
         <!-- Overlay para o menu mobile -->
         <div id="mobile-menu-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-30 hidden sm:hidden"></div>
 
         <div class="flex-1 flex flex-col">
-            <header class="h-16 flex-shrink-0 flex items-center justify-between border-b border-gray-200 px-4 sm:px-6">
+            <header class="h-16 flex-shrink-0 flex items-center justify-between border-b border-gray-200 dark:border-gray-700 px-4 sm:px-6">
                 <div class="flex items-center space-x-2 sm:space-x-4">
                     <!-- Botão do menu hambúrguer -->
-                    <button id="mobile-menu-btn" class="p-2 rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100 sm:hidden">
+                    <button id="mobile-menu-btn" class="p-2 rounded-md text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 sm:hidden">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
                         </svg>
                     </button>
-                    <button id="today-btn" class="border border-gray-300 rounded-lg px-3 py-2 text-sm font-medium hover:bg-gray-100">Hoje</button>
+                    <button id="today-btn" class="border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm font-medium text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700">Hoje</button>
                     <div class="flex items-center">
-                        <button id="prev-btn" class="p-2 rounded-full hover:bg-gray-100"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg></button>
-                        <button id="next-btn" class="p-2 rounded-full hover:bg-gray-100"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg></button>
+                        <button id="prev-btn" class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-500 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg></button>
+                        <button id="next-btn" class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-500 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg></button>
                     </div>
                     <!-- Título do mês ajustado para ser responsivo -->
-                    <h2 id="main-month-year-header" class="text-lg sm:text-xl text-gray-800 font-semibold whitespace-nowrap"></h2>
+                    <h2 id="main-month-year-header" class="text-lg sm:text-xl text-gray-800 dark:text-gray-100 font-semibold whitespace-nowrap"></h2>
                 </div>
                 <div class="flex items-center space-x-2">
                      <!-- Container do Toggle de Mês Liberado -->
                     <div id="month-status-container" class="flex items-center space-x-2">
                         <div class="relative inline-block w-12 align-middle select-none transition duration-200 ease-in">
                             <input type="checkbox" name="toggle" id="month-status-toggle" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer"/>
-                            <label for="month-status-toggle" class="toggle-label block overflow-hidden h-6 rounded-full bg-gray-300 cursor-pointer"></label>
+                            <label for="month-status-toggle" class="toggle-label block overflow-hidden h-6 rounded-full bg-gray-300 dark:bg-gray-600 cursor-pointer"></label>
                         </div>
-                        <span id="month-status-label" class="hidden sm:inline text-sm font-medium text-gray-500">Mês Não Liberado</span>
+                        <span id="month-status-label" class="hidden sm:inline text-sm font-medium text-gray-500 dark:text-gray-400">Mês Não Liberado</span>
                     </div>
                 </div>
             </header>
@@ -402,6 +474,28 @@
             renderAvailabilityCalendar();
         });
         copyLinkBtn.addEventListener('click', handleCopyLink);
+
+        // --- THEME TOGGLE LOGIC ---
+        const themeToggle = document.getElementById('theme-toggle-input');
+
+        const applyTheme = (isDark) => {
+            if (isDark) {
+                document.documentElement.classList.add('dark');
+            } else {
+                document.documentElement.classList.remove('dark');
+            }
+            localStorage.setItem('theme', isDark ? 'dark' : 'light');
+            themeToggle.checked = isDark;
+        };
+
+        const themeCheck = () => {
+            const userTheme = localStorage.getItem('theme');
+            const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            applyTheme(userTheme === 'dark' || (!userTheme && systemTheme));
+        };
+
+        themeToggle.addEventListener('change', (e) => applyTheme(e.target.checked));
+        // --- END THEME TOGGLE LOGIC ---
 
 
         // --- AUTH LOGIC ---
@@ -538,8 +632,8 @@
         // --- VIEW RENDERERS ---
         function renderMonthView() {
             calendarContainer.innerHTML = `
-                <div id="calendar-header" class="grid grid-cols-7 sticky top-0 bg-white z-10">
-                    <div class="text-center text-xs font-medium text-gray-500 border-r border-b border-gray-200 py-2">D</div><div class="text-center text-xs font-medium text-gray-500 border-r border-b border-gray-200 py-2">S</div><div class="text-center text-xs font-medium text-gray-500 border-r border-b border-gray-200 py-2">T</div><div class="text-center text-xs font-medium text-gray-500 border-r border-b border-gray-200 py-2">Q</div><div class="text-center text-xs font-medium text-gray-500 border-r border-b border-gray-200 py-2">Q</div><div class="text-center text-xs font-medium text-gray-500 border-r border-b border-gray-200 py-2">S</div><div class="text-center text-xs font-medium text-gray-500 border-b border-gray-200 py-2">S</div>
+                <div id="calendar-header" class="grid grid-cols-7 sticky top-0 bg-white dark:bg-gray-800 z-10">
+                    <div class="text-center text-xs font-medium text-gray-500 dark:text-gray-400 border-r border-b border-gray-200 dark:border-gray-700 py-2">D</div><div class="text-center text-xs font-medium text-gray-500 dark:text-gray-400 border-r border-b border-gray-200 dark:border-gray-700 py-2">S</div><div class="text-center text-xs font-medium text-gray-500 dark:text-gray-400 border-r border-b border-gray-200 dark:border-gray-700 py-2">T</div><div class="text-center text-xs font-medium text-gray-500 dark:text-gray-400 border-r border-b border-gray-200 dark:border-gray-700 py-2">Q</div><div class="text-center text-xs font-medium text-gray-500 dark:text-gray-400 border-r border-b border-gray-200 dark:border-gray-700 py-2">Q</div><div class="text-center text-xs font-medium text-gray-500 dark:text-gray-400 border-r border-b border-gray-200 dark:border-gray-700 py-2">S</div><div class="text-center text-xs font-medium text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-gray-700 py-2">S</div>
                 </div>
                 <div id="calendar-grid-main" class="grid grid-cols-7 h-full"></div>`;
             const mainCalendarGrid = document.getElementById('calendar-grid-main');
@@ -548,12 +642,12 @@
             const firstDayOfMonth = new Date(year, month, 1).getDay();
             const daysInMonth = new Date(year, month + 1, 0).getDate();
             const today = new Date();
-            for (let i = 0; i < firstDayOfMonth; i++) { mainCalendarGrid.innerHTML += `<div class="border-r border-b border-gray-200 bg-gray-50"></div>`; }
+            for (let i = 0; i < firstDayOfMonth; i++) { mainCalendarGrid.innerHTML += `<div class="border-r border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50"></div>`; }
             for (let i = 1; i <= daysInMonth; i++) {
                 const dayDate = new Date(year, month, i);
                 const dayCell = document.createElement('div');
-                dayCell.className = 'day-cell border-r border-b border-gray-200 p-1 relative flex flex-col';
-                if (dayDate.getDay() === 0 || dayDate.getDay() === 6) { dayCell.classList.add('bg-gray-50'); }
+                dayCell.className = 'day-cell border-r border-b border-gray-200 dark:border-gray-700 p-1 relative flex flex-col text-gray-900 dark:text-gray-200';
+                if (dayDate.getDay() === 0 || dayDate.getDay() === 6) { dayCell.classList.add('bg-gray-50', 'dark:bg-gray-800/50'); }
                 const dayNumber = document.createElement('span');
                 dayNumber.textContent = i;
                 dayNumber.className = 'day-number w-6 h-6 flex items-center justify-center rounded-full text-xs sm:text-sm self-center sm:self-start';
@@ -574,7 +668,7 @@
                     desktopContainer.className = 'hidden sm:block';
                     appointmentsForDay.slice(0, 2).forEach(app => {
                         const appEl = document.createElement('div');
-                        appEl.className = 'bg-green-100 border-l-2 border-green-500 text-green-800 px-1 rounded-r-md text-xs cursor-pointer hover:bg-green-200 truncate';
+                        appEl.className = 'bg-green-100 dark:bg-green-900/50 border-l-2 border-green-500 text-green-800 dark:text-green-300 px-1 rounded-r-md text-xs cursor-pointer hover:bg-green-200 dark:hover:bg-green-800/70 truncate';
                         const appTime = app.timestamp.toDate().getHours();
                         appEl.innerHTML = `<strong>${String(appTime).padStart(2, '0')}:00</strong> ${app.alunoNome}`;
                         appEl.addEventListener('click', (e) => { e.stopPropagation(); openEditAppointmentModal(app); });
@@ -600,19 +694,19 @@
             calendarContainer.innerHTML = '';
             const grid = document.createElement('div');
             grid.className = 'time-grid';
-            grid.innerHTML += `<div class="sticky top-0 bg-white z-10"></div>`;
+            grid.innerHTML += `<div class="sticky top-0 bg-white dark:bg-gray-800 z-10"></div>`;
             const startOfWeek = new Date(currentDate);
             startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay());
             for (let i = 0; i < 7; i++) {
                 const day = new Date(startOfWeek);
                 day.setDate(day.getDate() + i);
-                grid.innerHTML += `<div class="sticky top-0 bg-white z-10 text-center p-2 border-b border-l"><div class="text-xs text-gray-500">${day.toLocaleDateString('pt-BR', { weekday: 'short' }).toUpperCase()}</div><div class="text-lg sm:text-2xl font-semibold">${day.getDate()}</div></div>`;
+                grid.innerHTML += `<div class="sticky top-0 bg-white dark:bg-gray-800 z-10 text-center p-2 border-b border-l border-gray-200 dark:border-gray-700"><div class="text-xs text-gray-500 dark:text-gray-400">${day.toLocaleDateString('pt-BR', { weekday: 'short' }).toUpperCase()}</div><div class="text-lg sm:text-2xl font-semibold text-gray-800 dark:text-gray-100">${day.getDate()}</div></div>`;
             }
             for (let hour = 7; hour <= 21; hour++) {
-                grid.innerHTML += `<div class="relative text-right pr-2 text-xs text-gray-500"><span class="absolute -top-2 right-1 bg-white px-1 z-10">${hour}:00</span></div>`;
+                grid.innerHTML += `<div class="relative text-right pr-2 text-xs text-gray-500 dark:text-gray-400"><span class="absolute -top-2 right-1 bg-white dark:bg-gray-800 px-1 z-10">${hour}:00</span></div>`;
                 for (let day = 0; day < 7; day++) {
                     const cell = document.createElement('div');
-                    cell.className = 'border-b border-l relative';
+                    cell.className = 'border-b border-l border-gray-200 dark:border-gray-700 relative';
                     cell.dataset.day = day;
                     cell.dataset.hour = hour;
                     grid.appendChild(cell);
@@ -630,8 +724,8 @@
                 const targetCell = grid.querySelector(`[data-day="${dayOfWeek}"][data-hour="${startHour}"]`);
                 if (targetCell) {
                     const appointmentEl = document.createElement('div');
-                    appointmentEl.className = 'absolute top-0 left-0 w-full h-full bg-blue-100 border-l-4 border-blue-500 p-1 rounded-r-md cursor-pointer text-xs overflow-hidden';
-                    appointmentEl.innerHTML = `<div class="font-semibold truncate">${app.alunoNome}</div><div class="truncate">${startHour}:00</div>`;
+                    appointmentEl.className = 'absolute top-0 left-0 w-full h-full bg-blue-100 dark:bg-blue-900/50 border-l-4 border-blue-500 p-1 rounded-r-md cursor-pointer text-xs overflow-hidden';
+                    appointmentEl.innerHTML = `<div class="font-semibold truncate text-blue-800 dark:text-blue-200">${app.alunoNome}</div><div class="truncate text-blue-600 dark:text-blue-300">${startHour}:00</div>`;
                     appointmentEl.addEventListener('click', () => openEditAppointmentModal(app));
                     targetCell.appendChild(appointmentEl);
                 }
@@ -642,11 +736,11 @@
             calendarContainer.innerHTML = '';
             const grid = document.createElement('div');
             grid.className = 'time-grid time-grid-day';
-            grid.innerHTML += `<div class="sticky top-0 bg-white z-10"></div><div class="sticky top-0 bg-white z-10 text-center p-2 border-b border-l"></div>`;
+            grid.innerHTML += `<div class="sticky top-0 bg-white dark:bg-gray-800 z-10"></div><div class="sticky top-0 bg-white dark:bg-gray-800 z-10 text-center p-2 border-b border-l border-gray-200 dark:border-gray-700"></div>`;
             for (let hour = 7; hour <= 21; hour++) {
-                grid.innerHTML += `<div class="relative text-right pr-2 text-xs text-gray-500"><span class="absolute -top-2 right-1 bg-white px-1 z-10">${hour}:00</span></div>`;
+                grid.innerHTML += `<div class="relative text-right pr-2 text-xs text-gray-500 dark:text-gray-400"><span class="absolute -top-2 right-1 bg-white dark:bg-gray-800 px-1 z-10">${hour}:00</span></div>`;
                 const cell = document.createElement('div');
-                cell.className = 'border-b border-l relative';
+                cell.className = 'border-b border-l border-gray-200 dark:border-gray-700 relative';
                 cell.dataset.hour = hour;
                 grid.appendChild(cell);
             }
@@ -658,8 +752,8 @@
                 const targetCell = grid.querySelector(`[data-hour="${startHour}"]`);
                 if (targetCell) {
                     const appointmentEl = document.createElement('div');
-                    appointmentEl.className = 'absolute top-0 left-0 w-full h-full bg-blue-100 border-l-4 border-blue-500 p-1 rounded-r-md cursor-pointer text-xs overflow-hidden';
-                    appointmentEl.innerHTML = `<div class="font-semibold truncate">${app.alunoNome}</div><div class="truncate">${startHour}:00</div>`;
+                    appointmentEl.className = 'absolute top-0 left-0 w-full h-full bg-blue-100 dark:bg-blue-900/50 border-l-4 border-blue-500 p-1 rounded-r-md cursor-pointer text-xs overflow-hidden';
+                    appointmentEl.innerHTML = `<div class="font-semibold truncate text-blue-800 dark:text-blue-200">${app.alunoNome}</div><div class="truncate text-blue-600 dark:text-blue-300">${startHour}:00</div>`;
                     appointmentEl.addEventListener('click', () => openEditAppointmentModal(app));
                     targetCell.appendChild(appointmentEl);
                 }
@@ -702,6 +796,8 @@
             monthStatusLabel.textContent = isPublished ? 'Mês Liberado' : 'Mês Não Liberado';
             monthStatusLabel.classList.toggle('text-green-600', isPublished);
             monthStatusLabel.classList.toggle('text-gray-500', !isPublished);
+            monthStatusLabel.classList.toggle('dark:text-green-400', isPublished);
+            monthStatusLabel.classList.toggle('dark:text-gray-400', !isPublished);
         }
 
         async function handleMonthStatusToggle() {
@@ -719,6 +815,9 @@
         monthStatusToggle.addEventListener('change', handleMonthStatusToggle);
 
         // --- MODAL LOGIC (AVAILABILITY) ---
+        const blockedSlotClasses = ['bg-red-200', 'dark:bg-red-900/40', 'text-red-800', 'dark:text-red-300'];
+        const availableSlotClasses = ['bg-green-200', 'dark:bg-green-900/40', 'text-green-800', 'dark:text-green-300'];
+
         function renderAvailabilityCalendar() {
             const grid = availabilityCalendarGrid;
             const header = availabilityMonthYearHeader;
@@ -727,8 +826,8 @@
             grid.innerHTML = '';
             daysOfWeek.forEach((day, index) => {
                 const dayHeaderEl = document.createElement('div');
-                dayHeaderEl.className = 'font-medium text-gray-500 p-2';
-                if (index === 0 || index === 6) { dayHeaderEl.classList.add('bg-gray-100', 'rounded'); }
+                dayHeaderEl.className = 'font-medium text-gray-500 dark:text-gray-400 p-2';
+                if (index === 0 || index === 6) { dayHeaderEl.classList.add('bg-gray-100', 'dark:bg-gray-700/50', 'rounded'); }
                 dayHeaderEl.textContent = day;
                 grid.appendChild(dayHeaderEl);
             });
@@ -745,56 +844,76 @@
                 dayEl.textContent = i;
                 dayEl.className = 'calendar-day p-2 rounded-full';
                 if (dayDate < today.setHours(0,0,0,0)) {
-                    dayEl.classList.add('disabled');
+                    dayEl.classList.add('disabled', 'dark:text-gray-500');
                 } else {
-                    dayEl.classList.add('cursor-pointer', 'hover:bg-blue-100');
+                    dayEl.classList.add('cursor-pointer', 'hover:bg-blue-100', 'dark:hover:bg-blue-900/50');
                     dayEl.addEventListener('click', () => openDailyAvailabilityModal(dayDate));
                 }
                 grid.appendChild(dayEl);
             }
         }
         async function openDailyAvailabilityModal(date) {
+            if (!db) {
+                console.error("Firestore DB not initialized!");
+                dailySlotsContainer.innerHTML = `<p class="text-center p-4 text-red-500">Erro: Conexão com banco de dados não iniciada.</p>`;
+                return;
+            }
             selectedDateForDailyManagement = date;
             dailyModalTitle.textContent = `Gerir Dia: ${date.toLocaleDateString('pt-BR')}`;
-            dailySlotsContainer.innerHTML = `<p class="text-center p-4">Carregando...</p>`;
+            dailySlotsContainer.innerHTML = `<p class="text-center p-4 dark:text-gray-300">Carregando...</p>`;
             dailyAvailabilityModal.classList.remove('hidden');
-            const docId = formatDateToId(date).substring(0, 7) + '-' + String(date.getDate()).padStart(2, '0');
-            const docRef = doc(db, "unavailable_slots", docId);
-            const docSnap = await getDoc(docRef);
-            if (docSnap.exists()) {
-                dailyBlockedSlots = docSnap.data().blocked_hours || [];
-            } else {
-                const dayOfWeek = date.getDay();
-                if (dayOfWeek === 0 || dayOfWeek === 6) {
-                    dailyBlockedSlots = Array.from({length: 15}, (_, i) => i + 7);
+            
+            try {
+                const docId = toYYYYMMDD(date);
+                const docRef = doc(db, "unavailable_slots", docId);
+                const docSnap = await getDoc(docRef);
+                
+                if (docSnap.exists()) {
+                    dailyBlockedSlots = docSnap.data().blocked_hours || [];
                 } else {
-                    dailyBlockedSlots = [];
+                    const dayOfWeek = date.getDay();
+                    if (dayOfWeek === 0 || dayOfWeek === 6) { // Default to blocked for Sunday/Saturday
+                        dailyBlockedSlots = Array.from({length: 15}, (_, i) => i + 7);
+                    } else {
+                        dailyBlockedSlots = [];
+                    }
                 }
-            }
-            dailySlotsContainer.innerHTML = '';
-            const totalHours = (21 - 7) + 1;
-            dayAvailabilityToggle.checked = dailyBlockedSlots.length < totalHours;
-            for (let hour = 7; hour <= 21; hour++) {
-                const slotEl = document.createElement('button');
-                const isBlocked = dailyBlockedSlots.includes(hour);
-                slotEl.textContent = `${String(hour).padStart(2, '0')}:00 - ${String(hour + 1).padStart(2, '0')}:00`;
-                slotEl.className = `w-full text-center p-3 border rounded-lg transition-colors availability-slot`;
-                slotEl.classList.add(isBlocked ? 'bg-red-200' : 'bg-green-200');
-                slotEl.dataset.hour = hour;
-                slotEl.addEventListener('click', () => toggleDailySlot(hour, slotEl));
-                dailySlotsContainer.appendChild(slotEl);
+
+                dailySlotsContainer.innerHTML = ''; // Clear loading
+                const totalHours = (21 - 7) + 1;
+                dayAvailabilityToggle.checked = dailyBlockedSlots.length < totalHours;
+                
+                for (let hour = 7; hour <= 21; hour++) {
+                    const slotEl = document.createElement('button');
+                    const isBlocked = dailyBlockedSlots.includes(hour);
+                    slotEl.textContent = `${String(hour).padStart(2, '0')}:00 - ${String(hour + 1).padStart(2, '0')}:00`;
+                    slotEl.className = `w-full text-center p-3 border rounded-lg transition-colors availability-slot dark:border-gray-600`;
+                    
+                    if (isBlocked) {
+                        slotEl.classList.add(...blockedSlotClasses);
+                    } else {
+                        slotEl.classList.add(...availableSlotClasses);
+                    }
+
+                    slotEl.dataset.hour = hour;
+                    slotEl.addEventListener('click', () => toggleDailySlot(hour, slotEl));
+                    dailySlotsContainer.appendChild(slotEl);
+                }
+            } catch (error) {
+                console.error("Error fetching daily availability for date:", date, "Error object:", error);
+                dailySlotsContainer.innerHTML = `<p class="text-center p-4 text-red-500">Erro ao carregar horários. Verifique o console para detalhes.</p>`;
             }
         }
         function toggleDailySlot(hour, element) {
             const hourIndex = dailyBlockedSlots.indexOf(hour);
             if (hourIndex > -1) {
                 dailyBlockedSlots.splice(hourIndex, 1);
-                element.classList.remove('bg-red-200');
-                element.classList.add('bg-green-200');
+                element.classList.remove(...blockedSlotClasses);
+                element.classList.add(...availableSlotClasses);
             } else {
                 dailyBlockedSlots.push(hour);
-                element.classList.remove('bg-green-200');
-                element.classList.add('bg-red-200');
+                element.classList.remove(...availableSlotClasses);
+                element.classList.add(...blockedSlotClasses);
             }
             const totalHours = (21 - 7) + 1;
             dayAvailabilityToggle.checked = dailyBlockedSlots.length < totalHours;
@@ -806,15 +925,19 @@
                 for (let hour = 7; hour <= 21; hour++) { dailyBlockedSlots.push(hour); }
             }
             document.querySelectorAll('#daily-slots-container .availability-slot').forEach(slotEl => {
-                slotEl.classList.toggle('bg-green-200', isAvailable);
-                slotEl.classList.toggle('bg-red-200', !isAvailable);
+                slotEl.classList.remove(...availableSlotClasses, ...blockedSlotClasses);
+                if(isAvailable) {
+                    slotEl.classList.add(...availableSlotClasses);
+                } else {
+                    slotEl.classList.add(...blockedSlotClasses);
+                }
             });
         });
         async function saveDailyAvailability() {
             if (!selectedDateForDailyManagement) return;
             dailyModalSaveBtn.disabled = true;
             dailyModalSaveBtn.textContent = "Salvando...";
-            const docId = formatDateToId(selectedDateForDailyManagement).substring(0, 7) + '-' + String(selectedDateForDailyManagement.getDate()).padStart(2, '0');
+            const docId = toYYYYMMDD(selectedDateForDailyManagement);
             const docRef = doc(db, "unavailable_slots", docId);
             try {
                 await setDoc(docRef, { blocked_hours: dailyBlockedSlots });
@@ -983,6 +1106,9 @@
                 populateTimeSlots(editTimeSelect, editDateInput.value, currentEditingAppointmentId);
             }
         });
+
+        // --- INITIALIZE ---
+        themeCheck(); // Verifica e aplica o tema ao carregar a página
 
     </script>
 </body>
