@@ -47,6 +47,30 @@
         <svg id="theme-icon-moon" class="h-6 w-6 hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" /></svg>
     </button>
 
+    <!-- Modal Meus Agendamentos -->
+    <div id="my-appointments-modal" class="fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center hidden">
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 w-11/12 max-w-lg animate-fadeInUp">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold text-gray-900 dark:text-gray-100">Meus Agendamentos</h3>
+                <button id="my-appointments-close-btn" class="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700">
+                    <svg class="w-6 h-6 text-gray-600 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            <div class="flex items-center space-x-2 mb-4">
+                <input type="email" id="search-email-input" placeholder="Digite seu e-mail" class="flex-grow mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                <button id="search-appointments-btn" class="bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors">Buscar</button>
+            </div>
+            <div id="my-appointments-results" class="max-h-80 overflow-y-auto space-y-3 pr-2">
+                <!-- Resultados da busca aparecerão aqui -->
+            </div>
+            <div class="mt-4 text-center">
+                <p class="text-sm text-red-600 dark:text-red-400">
+                    <strong>Aviso:</strong> Para cancelar ou reagendar uma aula, por favor, entre em contato diretamente comigo.
+                </p>
+            </div>
+        </div>
+    </div>
+
     <!-- Modal de Pré-Confirmação -->
     <div id="pre-confirmation-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center hidden">
         <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 w-11/12 max-w-sm text-center animate-fadeInUp">
@@ -93,6 +117,7 @@
     <div class="container mx-auto p-4 sm:p-6 lg:p-8">
         <div class="text-center pt-8 mb-10 animate-fadeInUp" style="animation-delay: 0.1s;">
             <h1 class="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-gray-100">Agende sua Aula de Inglês</h1>
+            <button id="view-my-appointments-btn" class="mt-4 text-blue-600 dark:text-blue-400 hover:underline">Ver meus agendamentos</button>
         </div>
 
         <main class="max-w-4xl mx-auto bg-white dark:bg-gray-800 p-6 sm:p-8 rounded-2xl shadow-lg animate-fadeInUp" style="animation-delay: 0.3s;">
@@ -202,6 +227,14 @@
         const themeToggle = document.getElementById('theme-toggle');
         const themeIconSun = document.getElementById('theme-icon-sun');
         const themeIconMoon = document.getElementById('theme-icon-moon');
+        
+        // --- Modal "Meus Agendamentos" ---
+        const myAppointmentsModal = document.getElementById('my-appointments-modal');
+        const viewMyAppointmentsBtn = document.getElementById('view-my-appointments-btn');
+        const myAppointmentsCloseBtn = document.getElementById('my-appointments-close-btn');
+        const searchEmailInput = document.getElementById('search-email-input');
+        const searchAppointmentsBtn = document.getElementById('search-appointments-btn');
+        const myAppointmentsResults = document.getElementById('my-appointments-results');
 
         // --- LÓGICA DO TEMA ---
         const applyTheme = (isDark) => {
@@ -448,6 +481,83 @@
                 confirmBtn.textContent = "Confirmar Agendamento";
             }
         }
+        
+        // --- LÓGICA "MEUS AGENDAMENTOS" ---
+        async function findMyAppointments() {
+            const email = searchEmailInput.value.trim().toLowerCase();
+            if (!email) {
+                myAppointmentsResults.innerHTML = '<p class="text-yellow-600 dark:text-yellow-400">Por favor, insira um e-mail.</p>';
+                return;
+            }
+            myAppointmentsResults.innerHTML = '<p>Buscando...</p>';
+
+            try {
+                const agendamentosRef = collection(db, "agendamentos");
+                const q = query(agendamentosRef, where("alunoEmail", "==", email));
+                const querySnapshot = await getDocs(q);
+
+                if (querySnapshot.empty) {
+                    myAppointmentsResults.innerHTML = '<p class="text-gray-500 dark:text-gray-400">Nenhum agendamento encontrado para este e-mail.</p>';
+                    return;
+                }
+
+                myAppointmentsResults.innerHTML = '';
+                const appointments = [];
+                querySnapshot.forEach(doc => {
+                    appointments.push(doc.data());
+                });
+
+                // Ordena do mais recente para o mais antigo
+                appointments.sort((a, b) => b.timestamp.toMillis() - a.timestamp.toMillis());
+
+                appointments.forEach(data => {
+                    const appointmentTime = data.timestamp.toDate();
+                    const appointmentEl = document.createElement('div');
+                    appointmentEl.className = 'p-3 border dark:border-gray-700 rounded-lg flex justify-between items-center';
+                    
+                    const textEl = document.createElement('div');
+                    const dateString = appointmentTime.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' });
+                    const timeString = `${String(appointmentTime.getHours()).padStart(2, '0')}:00`;
+                    textEl.innerHTML = `<p class="font-semibold">${dateString}</p><p class="text-sm text-gray-600 dark:text-gray-400">${timeString}</p>`;
+                    
+                    const buttonEl = document.createElement('button');
+                    buttonEl.textContent = 'Adicionar na Agenda';
+                    buttonEl.className = 'text-sm bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 font-semibold py-1 px-3 rounded-md hover:bg-blue-200 dark:hover:bg-blue-800/50';
+                    buttonEl.onclick = () => {
+                        const endTime = new Date(appointmentTime);
+                        endTime.setHours(appointmentTime.getHours() + 1);
+                        showNotification(
+                            'Adicionar à Agenda',
+                            `Evento: Aula com ${data.alunoNome} em ${dateString} às ${timeString}.`,
+                            {
+                                startTime: appointmentTime,
+                                endTime: endTime,
+                                title: `Aula de Inglês com ${data.alunoNome}`,
+                                description: 'Aula de inglês agendada pelo sistema online.'
+                            }
+                        );
+                    };
+
+                    appointmentEl.appendChild(textEl);
+                    appointmentEl.appendChild(buttonEl);
+                    myAppointmentsResults.appendChild(appointmentEl);
+                });
+
+            } catch(error) {
+                console.error("Erro ao buscar agendamentos:", error);
+                myAppointmentsResults.innerHTML = '<p class="text-red-500">Ocorreu um erro ao buscar seus agendamentos.</p>';
+            }
+        }
+
+        viewMyAppointmentsBtn.addEventListener('click', () => myAppointmentsModal.classList.remove('hidden'));
+        myAppointmentsCloseBtn.addEventListener('click', () => myAppointmentsModal.classList.add('hidden'));
+        searchAppointmentsBtn.addEventListener('click', findMyAppointments);
+        searchEmailInput.addEventListener('keyup', (event) => {
+            if (event.key === 'Enter') {
+                findMyAppointments();
+            }
+        });
+
 
         prevMonthBtn.addEventListener('click', () => { currentDate.setMonth(currentDate.getMonth() - 1); renderCalendar(); });
         nextMonthBtn.addEventListener('click', () => { currentDate.setMonth(currentDate.getMonth() + 1); renderCalendar(); });
