@@ -10,11 +10,9 @@
     <!-- Configuração do Tailwind para Dark Mode -->
     <script>
         tailwind.config = {
-            darkMode: 'class', // Habilita o modo escuro baseado em uma classe no elemento <html>
+            darkMode: 'class',
             theme: {
-                extend: {
-                    // Você pode adicionar extensões de tema aqui se necessário
-                }
+                extend: {}
             }
         }
     </script>
@@ -22,20 +20,23 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Day.js for Timezone support -->
+    <script src="https://cdn.jsdelivr.net/npm/dayjs@1/dayjs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dayjs@1/plugin/utc.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dayjs@1/plugin/timezone.min.js"></script>
     <style>
         body {
             font-family: 'Inter', sans-serif;
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
         }
-        /* Ajuste para o calendário mobile */
         .calendar-grid-container { height: calc(100vh - 64px); }
         .day-cell { 
-            min-height: 90px; /* Altura reduzida para caber melhor no mobile */
+            min-height: 90px;
         }
-        @media (min-width: 640px) { /* sm breakpoint */
+        @media (min-width: 640px) {
             .day-cell {
-                min-height: 120px; /* Altura original para desktop */
+                min-height: 120px;
             }
         }
         .day-cell.today .day-number { background-color: #3b82f6; color: white; }
@@ -49,11 +50,10 @@
         #toast-notification.show { opacity: 1; transform: translateX(0); }
         .toggle-checkbox:checked { right: 0; border-color: #48bb78; }
         .toggle-checkbox:checked + .toggle-label { background-color: #48bb78; }
-        /* Estilos para Week/Day View */
         .time-grid {
             display: grid;
-            grid-template-columns: 40px repeat(7, 1fr); /* Coluna de hora + 7 dias */
-            grid-template-rows: auto repeat(15, 4rem); /* Header + 15 slots de 1h (7h-21h) */
+            grid-template-columns: 40px repeat(7, 1fr);
+            grid-template-rows: auto repeat(15, 4rem);
         }
          @media (min-width: 640px) {
             .time-grid {
@@ -61,64 +61,23 @@
             }
          }
         .time-grid-day {
-             grid-template-columns: 40px 1fr; /* Coluna de hora + 1 dia */
+             grid-template-columns: 40px 1fr;
         }
          @media (min-width: 640px) {
             .time-grid-day {
                 grid-template-columns: 60px 1fr;
             }
          }
-        /* Estilos para o Interruptor de Tema */
-        .theme-switch-wrapper {
-            display: flex;
-            align-items: center;
-        }
-        .theme-switch {
-            display: inline-block;
-            height: 24px;
-            position: relative;
-            width: 44px;
-        }
-        .theme-switch input {
-            opacity: 0;
-            width: 0;
-            height: 0;
-        }
-        .slider {
-            background-color: #ccc;
-            bottom: 0;
-            cursor: pointer;
-            left: 0;
-            position: absolute;
-            right: 0;
-            top: 0;
-            transition: .4s;
-        }
-        .slider:before {
-            background-color: white;
-            bottom: 4px;
-            content: "";
-            height: 16px;
-            left: 4px;
-            position: absolute;
-            transition: .4s;
-            width: 16px;
-        }
-        input:checked + .slider {
-            background-color: #3b82f6;
-        }
-        input:focus + .slider {
-            box-shadow: 0 0 1px #3b82f6;
-        }
-        input:checked + .slider:before {
-            transform: translateX(20px);
-        }
-        .slider.round {
-            border-radius: 24px;
-        }
-        .slider.round:before {
-            border-radius: 50%;
-        }
+        .theme-switch-wrapper { display: flex; align-items: center; }
+        .theme-switch { display: inline-block; height: 24px; position: relative; width: 44px; }
+        .theme-switch input { opacity: 0; width: 0; height: 0; }
+        .slider { background-color: #ccc; bottom: 0; cursor: pointer; left: 0; position: absolute; right: 0; top: 0; transition: .4s; }
+        .slider:before { background-color: white; bottom: 4px; content: ""; height: 16px; left: 4px; position: absolute; transition: .4s; width: 16px; }
+        input:checked + .slider { background-color: #3b82f6; }
+        input:focus + .slider { box-shadow: 0 0 1px #3b82f6; }
+        input:checked + .slider:before { transform: translateX(20px); }
+        .slider.round { border-radius: 24px; }
+        .slider.round:before { border-radius: 50%; }
     </style>
 </head>
 <body class="bg-gray-100 dark:bg-gray-900">
@@ -176,7 +135,7 @@
                         <input type="date" id="add-date" class="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-gray-900 dark:text-white" required>
                     </div>
                     <div class="mb-4">
-                        <label for="add-time" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Horário</label>
+                        <label for="add-time" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Horário (Seu Fuso Horário)</label>
                         <select id="add-time" class="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-gray-900 dark:text-white" required></select>
                     </div>
                     <div class="mb-4">
@@ -248,16 +207,23 @@
                     </button>
                 </div>
                 <div id="edit-modal-content">
+                    <div class="mb-4 p-3 bg-gray-100 dark:bg-gray-700 rounded-lg">
+                        <p id="original-time-display" class="text-center text-gray-900 dark:text-gray-100"></p>
+                    </div>
                     <div class="mb-4">
                         <label for="edit-student-name" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Nome do Aluno</label>
                         <input type="text" id="edit-student-name" class="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-gray-900 dark:text-white">
                     </div>
                     <div class="mb-4">
-                        <label for="edit-date" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Nova Data</label>
+                        <label for="edit-student-email" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Email do Aluno</label>
+                        <input type="email" id="edit-student-email" class="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-gray-900 dark:text-white">
+                    </div>
+                    <div class="mb-4">
+                        <label for="edit-date" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Nova Data (Seu fuso horário)</label>
                         <input type="date" id="edit-date" class="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-gray-900 dark:text-white">
                     </div>
                     <div class="mb-4">
-                        <label for="edit-time" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Novo Horário</label>
+                        <label for="edit-time" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Novo Horário (Seu fuso horário)</label>
                         <select id="edit-time" class="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-gray-900 dark:text-white"></select>
                     </div>
                 </div>
@@ -278,12 +244,10 @@
 
         <!-- Sidebar / Menu Mobile -->
         <aside id="mobile-sidebar" class="fixed top-0 left-0 h-full w-72 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 p-4 flex flex-col flex-shrink-0 z-40 transform -translate-x-full transition-transform duration-300 ease-in-out sm:relative sm:translate-x-0 sm:w-64">
-            <!-- Perfil atualizado com nome/email e classes para truncar texto -->
             <div class="flex items-center space-x-3 mb-6 relative">
                  <button id="profile-btn" class="w-12 h-12 rounded-full overflow-hidden flex-shrink-0">
                     <img src="https://lh3.googleusercontent.com/pw/AP1GczOiHiozdELOcECbcqey-LOW9MxJji6afuQkoIU50EgyeC4ZcO1PrLjlMRJEiQZqiF1sr5DNqYTc6_8X-I4iNqzGH__uVyeHr3_dnls_TBpLolASPAQdDrmYWFA_od9WIQE6Ea-WnyQpR6mTm-tIi0RdRw=w866-h869-s-no-gm?authuser=0" alt="Foto do Perfil" class="w-full h-full object-cover">
                  </button>
-                 <!-- Adicionado min-w-0 para permitir o truncamento em um container flex -->
                  <div class="min-w-0">
                     <h2 class="font-semibold text-gray-800 dark:text-gray-100 truncate">Samara Lopes</h2>
                     <p class="text-sm text-gray-500 dark:text-gray-400 truncate">samaradeodatolopes@gmail.com</p>
@@ -304,7 +268,6 @@
                 <span>Copiar Link</span>
             </button>
             
-            <!-- View Switcher (Desktop) -->
             <div class="hidden sm:block border-t border-gray-200 dark:border-gray-700 pt-4 mt-4">
                 <label for="view-switcher-desktop" class="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Visualização</label>
                 <select id="view-switcher-desktop" class="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm font-medium bg-white dark:bg-gray-700 dark:text-white hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none">
@@ -314,7 +277,6 @@
                 </select>
             </div>
 
-            <!-- Interruptor de Tema (Único) -->
             <div class="mt-auto border-t border-gray-200 dark:border-gray-700 pt-4 flex items-center justify-center px-4">
                 <div class="theme-switch-wrapper flex items-center space-x-2">
                     <svg class="w-6 h-6 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
@@ -327,20 +289,17 @@
             </div>
         </aside>
 
-        <!-- Overlay para o menu mobile -->
         <div id="mobile-menu-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-30 hidden sm:hidden"></div>
 
         <div class="flex-1 flex flex-col">
             <header class="h-16 flex-shrink-0 flex items-center justify-between border-b border-gray-200 dark:border-gray-700 px-4 sm:px-6">
                 <div class="flex items-center space-x-2 sm:space-x-4">
-                    <!-- Botão do menu hambúrguer -->
                     <button id="mobile-menu-btn" class="p-2 rounded-md text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 sm:hidden">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
                         </svg>
                     </button>
 
-                    <!-- View Switcher (Mobile) -->
                     <div class="sm:hidden">
                         <select id="view-switcher-mobile" class="border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm font-medium bg-white dark:bg-gray-700 dark:text-white hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none">
                             <option value="month">Mês</option>
@@ -349,18 +308,15 @@
                         </select>
                     </div>
                     
-                    <!-- Botão Hoje (Desktop) -->
                     <button id="today-btn" class="hidden sm:inline-flex items-center border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm font-medium text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700">Hoje</button>
                     
                     <div class="flex items-center">
                         <button id="prev-btn" class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-500 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg></button>
                         <button id="next-btn" class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-500 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg></button>
                     </div>
-                    <!-- Título do mês ajustado para ser responsivo -->
                     <h2 id="main-month-year-header" class="text-lg sm:text-xl text-gray-800 dark:text-gray-100 font-semibold whitespace-nowrap"></h2>
                 </div>
                 <div class="flex items-center space-x-2">
-                     <!-- Container do Toggle de Mês Liberado -->
                     <div id="month-status-container" class="flex items-center space-x-2">
                         <div class="relative inline-block w-12 align-middle select-none transition duration-200 ease-in">
                             <input type="checkbox" name="toggle" id="month-status-toggle" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer"/>
@@ -371,7 +327,6 @@
                 </div>
             </header>
             <div id="calendar-container" class="flex-1 overflow-x-auto calendar-grid-container">
-                <!-- As visualizações do calendário serão renderizadas aqui -->
             </div>
         </div>
     </div>
@@ -380,6 +335,9 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, onAuthStateChanged, signOut, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, onSnapshot, doc, getDoc, setDoc, updateDoc, deleteDoc, Timestamp, addDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        dayjs.extend(window.dayjs_plugin_utc);
+        dayjs.extend(window.dayjs_plugin_timezone);
 
         const firebaseConfig = {
             apiKey: "AIzaSyDe3nn7CJkundWt0GESwDRXFzorbgUVXI8",
@@ -393,7 +351,6 @@
         const auth = getAuth(app);
         const db = getFirestore(app);
         
-        // --- STATE ---
         let currentDate = new Date();
         let currentView = 'month';
         let allAppointments = [];
@@ -402,7 +359,6 @@
         let selectedDateForDailyManagement = null;
         let currentEditingAppointmentId = null;
 
-        // --- DOM ELEMENTS ---
         const loginContainer = document.getElementById('login-container');
         const loginForm = document.getElementById('login-form');
         const emailInput = document.getElementById('email');
@@ -426,7 +382,6 @@
         const monthStatusLabel = document.getElementById('month-status-label');
         const monthStatusContainer = document.getElementById('month-status-container');
         
-        // Modals
         const addAppointmentModal = document.getElementById('add-appointment-modal');
         const addModalCloseBtn = document.getElementById('add-modal-close-btn');
         const addAppointmentForm = document.getElementById('add-appointment-form');
@@ -450,7 +405,9 @@
         const dayAvailabilityToggle = document.getElementById('day-availability-toggle');
         const editAppointmentModal = document.getElementById('edit-appointment-modal');
         const editModalCloseBtn = document.getElementById('edit-modal-close-btn');
+        const originalTimeDisplay = document.getElementById('original-time-display');
         const editStudentName = document.getElementById('edit-student-name');
+        const editStudentEmail = document.getElementById('edit-student-email');
         const editDateInput = document.getElementById('edit-date');
         const editTimeSelect = document.getElementById('edit-time');
         const editSaveBtn = document.getElementById('edit-save-btn');
@@ -461,7 +418,6 @@
         const cancelDeleteBtn = document.getElementById('cancel-delete-btn');
         const confirmDeleteBtn = document.getElementById('confirm-delete-btn');
 
-        // --- MOBILE MENU ELEMENTS ---
         const mobileMenuBtn = document.getElementById('mobile-menu-btn');
         const mobileSidebar = document.getElementById('mobile-sidebar');
         const mobileMenuOverlay = document.getElementById('mobile-menu-overlay');
@@ -471,7 +427,6 @@
             mobileMenuOverlay.classList.toggle('hidden');
         }
 
-        // --- MOBILE MENU EVENT LISTENERS ---
         mobileMenuBtn.addEventListener('click', toggleMobileMenu);
         mobileMenuOverlay.addEventListener('click', toggleMobileMenu);
         
@@ -493,7 +448,6 @@
         });
         copyLinkBtn.addEventListener('click', handleCopyLink);
 
-        // --- THEME TOGGLE LOGIC ---
         const themeToggle = document.getElementById('theme-toggle-input');
 
         const applyTheme = (isDark) => {
@@ -513,17 +467,13 @@
         };
 
         themeToggle.addEventListener('change', (e) => applyTheme(e.target.checked));
-        // --- END THEME TOGGLE LOGIC ---
 
-
-        // --- AUTH LOGIC ---
         onAuthStateChanged(auth, (user) => {
             loadingScreen.style.display = 'none';
             if (user) {
                 contentWrapper.style.display = 'flex';
                 loginContainer.style.display = 'none';
                 
-                // Atualiza info do perfil no menu com os dados fixos solicitados
                 const profileName = mobileSidebar.querySelector('h2');
                 const profileEmail = mobileSidebar.querySelector('p');
                 profileName.textContent = "Samara Lopes";
@@ -548,7 +498,7 @@
         function handleLogout() { signOut(auth).catch((error) => console.error('Erro ao sair:', error)); }
         logoutBtnMenu.addEventListener('click', handleLogout);
         profileBtn.addEventListener('click', (e) => {
-            e.stopPropagation(); // Impede que o clique feche o menu lateral
+            e.stopPropagation();
             profileMenu.classList.toggle('hidden');
         });
         document.addEventListener('click', (e) => {
@@ -557,8 +507,6 @@
             }
         })
 
-
-        // --- UTILS ---
         function formatDateToId(date) {
             const y = date.getFullYear();
             const m = String(date.getMonth() + 1).padStart(2, '0');
@@ -582,7 +530,6 @@
             setTimeout(() => { toast.classList.remove('show'); }, 3000);
         }
 
-        // --- COPY LINK LOGIC ---
         function handleCopyLink() {
             const currentUrl = window.location.href;
             const studentPageUrl = currentUrl.substring(0, currentUrl.lastIndexOf('/') + 1) + 'aulas.html';
@@ -599,7 +546,6 @@
             document.body.removeChild(textArea);
         }
         
-        // --- MAIN RENDER FUNCTION ---
         async function render() {
             updateControlsVisibility();
             updateHeader();
@@ -611,7 +557,6 @@
             }
         }
 
-        // --- CONTROLS VISIBILITY ---
         function updateControlsVisibility() {
             if (currentView === 'month') {
                 monthStatusContainer.classList.remove('hidden');
@@ -620,9 +565,7 @@
             }
         }
 
-        // --- HEADER UPDATE ---
         function updateHeader() {
-            // Ajustado para mostrar apenas o mês no mobile e completo no desktop
             const monthName = currentDate.toLocaleString('pt-BR', { month: 'long' });
             const year = currentDate.getFullYear();
             
@@ -647,7 +590,6 @@
             `;
         }
 
-        // --- VIEW RENDERERS ---
         function renderMonthView() {
             calendarContainer.innerHTML = `
                 <div id="calendar-header" class="grid grid-cols-7 sticky top-0 bg-white dark:bg-gray-800 z-10">
@@ -675,20 +617,18 @@
                 if (appointmentsForDay.length > 0) {
                     const appointmentsContainer = document.createElement('div');
                     appointmentsContainer.className = 'mt-1 space-y-1 overflow-hidden';
-                     // No mobile, mostra apenas um ponto indicativo
                     const mobileIndicator = document.createElement('div');
                     mobileIndicator.className = 'sm:hidden flex justify-center items-center mt-1';
                     mobileIndicator.innerHTML = `<div class="w-2 h-2 bg-green-500 rounded-full"></div>`;
                     appointmentsContainer.appendChild(mobileIndicator);
 
-                    // No desktop, mostra os detalhes
                     const desktopContainer = document.createElement('div');
                     desktopContainer.className = 'hidden sm:block';
                     appointmentsForDay.slice(0, 2).forEach(app => {
                         const appEl = document.createElement('div');
                         appEl.className = 'bg-green-100 dark:bg-green-900/50 border-l-2 border-green-500 text-green-800 dark:text-green-300 px-1 rounded-r-md text-xs cursor-pointer hover:bg-green-200 dark:hover:bg-green-800/70 truncate';
-                        const appTime = app.timestamp.toDate().getHours();
-                        appEl.innerHTML = `<strong>${String(appTime).padStart(2, '0')}:00</strong> ${app.alunoNome}`;
+                        const adminTime = app.timestamp.toDate().toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'});
+                        appEl.innerHTML = `<strong>${adminTime}</strong> ${app.alunoNome}`;
                         appEl.addEventListener('click', (e) => { e.stopPropagation(); openEditAppointmentModal(app); });
                         desktopContainer.appendChild(appEl);
                     });
@@ -743,7 +683,14 @@
                 if (targetCell) {
                     const appointmentEl = document.createElement('div');
                     appointmentEl.className = 'absolute top-0 left-0 w-full h-full bg-blue-100 dark:bg-blue-900/50 border-l-4 border-blue-500 p-1 rounded-r-md cursor-pointer text-xs overflow-hidden';
-                    appointmentEl.innerHTML = `<div class="font-semibold truncate text-blue-800 dark:text-blue-200">${app.alunoNome}</div><div class="truncate text-blue-600 dark:text-blue-300">${startHour}:00</div>`;
+                    
+                    const adminTime = appDate.toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit'});
+                    let displayHTML = `<div class="font-semibold truncate text-blue-800 dark:text-blue-200">${app.alunoNome}</div><div class="truncate text-blue-600 dark:text-blue-300">${adminTime} (Seu Horário)</div>`;
+                    if (app.timezone) {
+                        const studentTime = dayjs(appDate).tz(app.timezone).format('HH:mm');
+                        displayHTML += `<div class="truncate text-xs text-gray-500 dark:text-gray-400">${studentTime} (${app.timezone.split('/')[1].replace(/_/g, ' ')})</div>`;
+                    }
+                    appointmentEl.innerHTML = displayHTML;
                     appointmentEl.addEventListener('click', () => openEditAppointmentModal(app));
                     targetCell.appendChild(appointmentEl);
                 }
@@ -771,14 +718,21 @@
                 if (targetCell) {
                     const appointmentEl = document.createElement('div');
                     appointmentEl.className = 'absolute top-0 left-0 w-full h-full bg-blue-100 dark:bg-blue-900/50 border-l-4 border-blue-500 p-1 rounded-r-md cursor-pointer text-xs overflow-hidden';
-                    appointmentEl.innerHTML = `<div class="font-semibold truncate text-blue-800 dark:text-blue-200">${app.alunoNome}</div><div class="truncate text-blue-600 dark:text-blue-300">${startHour}:00</div>`;
+                    
+                    const adminTime = appDate.toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit'});
+                    let displayHTML = `<div class="font-semibold truncate text-blue-800 dark:text-blue-200">${app.alunoNome}</div><div class="truncate text-blue-600 dark:text-blue-300">${adminTime} (Seu Horário)</div>`;
+                    if (app.timezone) {
+                        const studentTime = dayjs(appDate).tz(app.timezone).format('HH:mm');
+                        displayHTML += `<div class="truncate text-xs text-gray-500 dark:text-gray-400">${studentTime} (${app.timezone.split('/')[1].replace(/_/g, ' ')})</div>`;
+                    }
+                    appointmentEl.innerHTML = displayHTML;
+
                     appointmentEl.addEventListener('click', () => openEditAppointmentModal(app));
                     targetCell.appendChild(appointmentEl);
                 }
             });
         }
 
-        // --- NAVIGATION LOGIC ---
         function handleNavigation(direction) {
             switch (currentView) {
                 case 'month': currentDate.setMonth(currentDate.getMonth() + direction); break;
@@ -805,7 +759,6 @@
         viewSwitcherDesktop.addEventListener('change', handleViewChange);
         viewSwitcherMobile.addEventListener('change', handleViewChange);
 
-        // --- DATA LISTENER ---
         function listenToAppointments() {
             const agendamentosRef = collection(db, "agendamentos");
             onSnapshot(agendamentosRef, (querySnapshot) => {
@@ -815,7 +768,6 @@
             }, (error) => { console.error("Erro ao buscar agendamentos: ", error); });
         }
         
-        // --- MONTH STATUS LOGIC ---
         async function updateMonthStatusUI() {
             if (currentView !== 'month') return;
             const monthId = formatDateToId(currentDate);
@@ -845,7 +797,6 @@
         }
         monthStatusToggle.addEventListener('change', handleMonthStatusToggle);
 
-        // --- MODAL LOGIC (AVAILABILITY) ---
         const blockedSlotClasses = ['bg-red-200', 'dark:bg-red-900/40', 'text-red-800', 'dark:text-red-300'];
         const availableSlotClasses = ['bg-green-200', 'dark:bg-green-900/40', 'text-green-800', 'dark:text-green-300'];
 
@@ -903,14 +854,14 @@
                     dailyBlockedSlots = docSnap.data().blocked_hours || [];
                 } else {
                     const dayOfWeek = date.getDay();
-                    if (dayOfWeek === 0 || dayOfWeek === 6) { // Default to blocked for Sunday/Saturday
+                    if (dayOfWeek === 0 || dayOfWeek === 6) { 
                         dailyBlockedSlots = Array.from({length: 15}, (_, i) => i + 7);
                     } else {
                         dailyBlockedSlots = [];
                     }
                 }
 
-                dailySlotsContainer.innerHTML = ''; // Clear loading
+                dailySlotsContainer.innerHTML = ''; 
                 const totalHours = (21 - 7) + 1;
                 dayAvailabilityToggle.checked = dailyBlockedSlots.length < totalHours;
                 
@@ -990,8 +941,6 @@
         dailyModalCloseBtn.addEventListener('click', () => dailyAvailabilityModal.classList.add('hidden'));
         dailyModalSaveBtn.addEventListener('click', saveDailyAvailability);
 
-        // --- NOVA FUNÇÃO ---
-        // Populates a time slot dropdown, disabling booked times.
         function populateTimeSlots(selectElement, selectedDateStr, appointmentIdToIgnore = null) {
             selectElement.innerHTML = '';
             const [year, month, day] = selectedDateStr.split('-').map(Number);
@@ -1021,7 +970,6 @@
             }
         }
 
-        // --- MODAL LOGIC (ADD APPOINTMENT) ---
         function openAddAppointmentModal() {
             addAppointmentForm.reset();
             const todayStr = toYYYYMMDD(new Date());
@@ -1061,14 +1009,29 @@
             populateTimeSlots(addTimeSelect, addDateInput.value);
         });
         
-        // --- MODAL LOGIC (EDIT APPOINTMENT) ---
         function openEditAppointmentModal(appointment) {
             currentEditingAppointmentId = appointment.id;
             editStudentName.value = appointment.alunoNome;
+            editStudentEmail.value = appointment.alunoEmail || '';
             const appointmentDate = appointment.timestamp.toDate();
+            
+            if (appointment.timezone) {
+                const studentTime = dayjs(appointmentDate).tz(appointment.timezone).format('HH:mm');
+                const adminTime = dayjs(appointmentDate).format('HH:mm');
+                
+                originalTimeDisplay.innerHTML = `
+                    <div class="text-sm">
+                        <span class="font-semibold">Horário do Aluno:</span> ${studentTime} (${appointment.timezone.replace(/_/g, ' ')})
+                        <br>
+                        <span class="font-semibold">Seu Horário:</span> ${adminTime} (Brasil)
+                    </div>
+                `;
+            } else {
+                originalTimeDisplay.textContent = 'Agendado manualmente no seu fuso horário.';
+            }
+
             const appointmentDateStr = toYYYYMMDD(appointmentDate);
             editDateInput.value = appointmentDateStr;
-            
             populateTimeSlots(editTimeSelect, appointmentDateStr, appointment.id);
             editTimeSelect.value = appointmentDate.getHours();
 
@@ -1081,6 +1044,7 @@
         }
         async function handleUpdateAppointment() {
             const newName = editStudentName.value.trim();
+            const newEmail = editStudentEmail.value.trim();
             const newDateStr = editDateInput.value;
             const newHour = parseInt(editTimeSelect.value, 10);
             if (!newName || !newDateStr || isNaN(newHour)) {
@@ -1093,6 +1057,7 @@
             try {
                 await updateDoc(docRef, { 
                     alunoNome: newName,
+                    alunoEmail: newEmail,
                     timestamp: Timestamp.fromDate(newTimestamp) 
                 });
                 showToast("Agendamento atualizado com sucesso!");
@@ -1138,8 +1103,7 @@
             }
         });
 
-        // --- INITIALIZE ---
-        themeCheck(); // Verifica e aplica o tema ao carregar a página
+        themeCheck();
 
     </script>
 </body>

@@ -17,6 +17,10 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Day.js for Timezone support -->
+    <script src="https://cdn.jsdelivr.net/npm/dayjs@1/dayjs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dayjs@1/plugin/utc.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dayjs@1/plugin/timezone.min.js"></script>
     <style>
         body {
             font-family: 'Inter', sans-serif;
@@ -119,11 +123,17 @@
             <h1 class="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-gray-100">Agende sua Aula de Inglês</h1>
             <button id="view-my-appointments-btn" class="mt-4 text-blue-600 dark:text-blue-400 hover:underline">Ver meus agendamentos</button>
         </div>
+        
+        <div class="max-w-4xl mx-auto mb-6 px-6 sm:px-8 lg:px-8 animate-fadeInUp" style="animation-delay: 0.2s;">
+            <label for="timezone-select" class="block text-lg font-semibold text-gray-800 dark:text-gray-200 mb-2">1. Escolha seu fuso horário:</label>
+            <p class="text-sm text-gray-600 dark:text-gray-400 mb-3">O seu fuso horário atual foi detectado automaticamente, Para garantir que o horário da aula esteja correto, por favor, selecione seu fuso horário na lista abaixo caso nao esteja correto.</p>
+            <select id="timezone-select" class="w-full mt-1 block px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"></select>
+        </div>
 
         <main class="max-w-4xl mx-auto bg-white dark:bg-gray-800 p-6 sm:p-8 rounded-2xl shadow-lg animate-fadeInUp" style="animation-delay: 0.3s;">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div class="border-r-0 md:border-r border-gray-200 dark:border-gray-700 md:pr-8">
-                    <h2 class="text-xl font-semibold mb-4">Escolha uma data</h2>
+                    <h2 class="text-xl font-semibold mb-4">2. Escolha uma data</h2>
                     <div class="bg-gray-100 dark:bg-gray-700/50 p-4 rounded-lg">
                         <div class="flex items-center justify-between mb-4">
                             <button id="prev-month-btn" class="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
@@ -141,7 +151,7 @@
                 </div>
 
                 <div>
-                    <h2 id="horarios-title" class="text-xl font-semibold mb-4">Escolha um horário</h2>
+                    <h2 id="horarios-title" class="text-xl font-semibold mb-4">3. Escolha um horário</h2>
                     <p id="selected-date-text" class="text-gray-600 dark:text-gray-400 mb-4">Selecione uma data para ver os horários</p>
                     <div id="available-times" class="max-h-80 overflow-y-auto space-y-2 pr-4">
                         <!-- Horários serão inseridos aqui -->
@@ -151,7 +161,7 @@
 
             <div id="confirmation-section" class="border-gray-200 dark:border-gray-700">
                 <div class="animate-fadeInUp">
-                    <h2 class="text-xl font-semibold mb-4">Confirme seus dados</h2>
+                    <h2 class="text-xl font-semibold mb-4">4. Confirme seus dados</h2>
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                             <label for="name" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Nome</label>
@@ -182,7 +192,9 @@
         import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, getDocs, addDoc, query, where, Timestamp, doc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // --- CONFIGURAÇÃO E INICIALIZAÇÃO ---
+        dayjs.extend(window.dayjs_plugin_utc);
+        dayjs.extend(window.dayjs_plugin_timezone);
+
         const firebaseConfig = {
             apiKey: "AIzaSyDe3nn7CJkundWt0GESwDRXFzorbgUVXI8",
             authDomain: "escolainglessamara.firebaseapp.com",
@@ -195,15 +207,14 @@
         const auth = getAuth(app);
         const db = getFirestore(app);
         
-        signInAnonymously(auth).catch((error) => {
-            console.error("Erro na autenticação anônima:", error);
-            showNotification("Erro de Conexão", "Não foi possível conectar ao sistema de agendamento. Por favor, tente novamente mais tarde.");
-        });
-
         let currentDate = new Date();
         let selectedDate = null;
         let selectedTime = null;
+        const ADMIN_TIMEZONE = "America/Sao_Paulo";
+        const ADMIN_WORK_START_HOUR = 7;
+        const ADMIN_WORK_END_HOUR = 21;
 
+        const timezoneSelect = document.getElementById('timezone-select');
         const monthYearHeader = document.getElementById('month-year-header');
         const calendarGrid = document.getElementById('calendar-grid');
         const prevMonthBtn = document.getElementById('prev-month-btn');
@@ -228,7 +239,6 @@
         const themeIconSun = document.getElementById('theme-icon-sun');
         const themeIconMoon = document.getElementById('theme-icon-moon');
         
-        // --- Modal "Meus Agendamentos" ---
         const myAppointmentsModal = document.getElementById('my-appointments-modal');
         const viewMyAppointmentsBtn = document.getElementById('view-my-appointments-btn');
         const myAppointmentsCloseBtn = document.getElementById('my-appointments-close-btn');
@@ -236,7 +246,6 @@
         const searchAppointmentsBtn = document.getElementById('search-appointments-btn');
         const myAppointmentsResults = document.getElementById('my-appointments-results');
 
-        // --- LÓGICA DO TEMA ---
         const applyTheme = (isDark) => {
             if (isDark) {
                 document.documentElement.classList.add('dark');
@@ -260,12 +269,79 @@
             const isDark = document.documentElement.classList.contains('dark');
             applyTheme(!isDark);
         });
-        // --- FIM DA LÓGICA DO TEMA ---
+
+        function populateTimezones() {
+            const userTimezone = dayjs.tz.guess();
+            
+            const brazilTimezones = [
+                { value: 'America/Noronha', text: 'UTC-2: Fernando de Noronha' },
+                { value: 'America/Sao_Paulo', text: 'UTC-3: Horário de Brasília' },
+                { value: 'America/Manaus', text: 'UTC-4: Manaus, Centro-Oeste, Norte' },
+                { value: 'America/Rio_Branco', text: 'UTC-5: Acre' }
+            ];
+
+            const otherTimezones = [
+                { value: 'Europe/Lisbon', text: 'Europe/Lisbon (Portugal)' },
+                { value: 'Europe/London', text: 'Europe/London (Reino Unido)' },
+                { value: 'America/New_York', text: 'America/New York (Costa Leste EUA)' },
+                { value: 'America/Los_Angeles', text: 'America/Los Angeles (Costa Oeste EUA)' },
+                { value: 'Asia/Tokyo', text: 'Asia/Tokyo (Japão)' }
+            ];
+            
+            const curatedTimezones = [...brazilTimezones.map(t => t.value), ...otherTimezones.map(t => t.value)];
+
+            timezoneSelect.innerHTML = ''; // Limpa opções existentes
+
+            // Adiciona grupo do Brasil
+            const brazilOptGroup = document.createElement('optgroup');
+            brazilOptGroup.label = 'Fusos Horários do Brasil';
+            brazilTimezones.forEach(tz => {
+                const option = document.createElement('option');
+                option.value = tz.value;
+                option.textContent = tz.text;
+                brazilOptGroup.appendChild(option);
+            });
+            timezoneSelect.appendChild(brazilOptGroup);
+            
+            // Adiciona grupo de outros fusos
+            const otherOptGroup = document.createElement('optgroup');
+            otherOptGroup.label = 'Outros Fusos Horários';
+            otherTimezones.forEach(tz => {
+                const option = document.createElement('option');
+                option.value = tz.value;
+                option.textContent = tz.text;
+                otherOptGroup.appendChild(option);
+            });
+            timezoneSelect.appendChild(otherOptGroup);
+
+            // Adiciona grupo com todos os fusos
+            const allOptGroup = document.createElement('optgroup');
+            allOptGroup.label = 'Todos os Fusos Horários';
+            const allTimezones = Intl.supportedValuesOf('timeZone');
+            
+            allTimezones
+                .filter(tz => !curatedTimezones.includes(tz)) // Evita duplicatas
+                .sort() // Ordena alfabeticamente
+                .forEach(tz => {
+                    const option = document.createElement('option');
+                    option.value = tz;
+                    option.textContent = tz.replace(/_/g, ' ');
+                    allOptGroup.appendChild(option);
+                });
+            timezoneSelect.appendChild(allOptGroup);
+
+            // Tenta selecionar o fuso do usuário
+            try {
+                timezoneSelect.value = userTimezone;
+            } catch(e) {
+                console.warn("Não foi possível selecionar o fuso horário do usuário automaticamente:", userTimezone);
+            }
+        }
 
         function showNotification(title, message, calendarData = null) {
             notificationTitle.textContent = title;
             notificationMessage.textContent = message;
-            calendarLinksContainer.innerHTML = ''; // Limpa links antigos
+            calendarLinksContainer.innerHTML = '';
 
             if (calendarData) {
                 const { startTime, endTime, title, description } = calendarData;
@@ -347,45 +423,63 @@
             selectedTime = null;
             renderCalendar();
             confirmationSection.classList.remove('show');
-            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            const studentTimezone = timezoneSelect.value;
+            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', timeZone: studentTimezone };
             selectedDateText.innerHTML = `Horários para <span class="font-bold text-blue-600 dark:text-blue-400">${date.toLocaleDateString('pt-BR', options)}</span>`;
             await renderAvailableTimes(date);
         }
 
         async function renderAvailableTimes(date) {
             availableTimesContainer.innerHTML = '<p class="text-gray-500 dark:text-gray-400">Carregando horários...</p>';
-            const startOfDay = new Date(date);
-            startOfDay.setHours(0, 0, 0, 0);
-            const endOfDay = new Date(date);
-            endOfDay.setHours(23, 59, 59, 999);
+            
+            const studentTimezone = timezoneSelect.value;
+            if (!studentTimezone) {
+                availableTimesContainer.innerHTML = '<p class="text-red-500">Por favor, selecione um fuso horário primeiro.</p>';
+                return;
+            }
+
+            const dayStartInStudentTz = dayjs.tz(formatDateToId(date), studentTimezone).startOf('day');
+            const dayEndInStudentTz = dayjs.tz(formatDateToId(date), studentTimezone).endOf('day');
+            
+            const startOfDayUTC = dayStartInStudentTz.toDate();
+            const endOfDayUTC = dayEndInStudentTz.toDate();
 
             try {
                 const agendamentosRef = collection(db, "agendamentos");
-                const q = query(agendamentosRef, where("timestamp", ">=", startOfDay), where("timestamp", "<=", endOfDay));
+                const q = query(agendamentosRef, where("timestamp", ">=", startOfDayUTC), where("timestamp", "<=", endOfDayUTC));
                 const appointmentsSnapshot = await getDocs(q);
-                const bookedTimes = appointmentsSnapshot.docs.map(doc => doc.data().timestamp.toDate().getHours());
+                
+                const bookedTimes = appointmentsSnapshot.docs.map(doc => {
+                    const utcTimestamp = doc.data().timestamp.toDate();
+                    return dayjs(utcTimestamp).tz(studentTimezone).hour();
+                });
 
                 const docId = formatDateToId(date);
                 const unavailRef = doc(db, "unavailable_slots", docId);
                 const unavailSnap = await getDoc(unavailRef);
                 
-                let blockedHours = [];
+                let adminBlockedHours = [];
                 if (unavailSnap.exists()) {
-                    blockedHours = unavailSnap.data().blocked_hours || [];
+                    adminBlockedHours = unavailSnap.data().blocked_hours || [];
                 } else {
                     const dayOfWeek = date.getDay();
-                    if (dayOfWeek === 0 || dayOfWeek === 6) { // Final de semana sem regra específica
-                        blockedHours = Array.from({length: 15}, (_, i) => i + 7); // Bloqueia de 7h às 21h
+                    if (dayOfWeek === 0 || dayOfWeek === 6) {
+                        adminBlockedHours = Array.from({length: 15}, (_, i) => i + 7);
                     }
                 }
 
                 availableTimesContainer.innerHTML = '';
                 let hasAvailableSlots = false;
                 for (let hour = 7; hour <= 21; hour++) {
+                    const studentTime = dayjs.tz(`${formatDateToId(date)}T${String(hour).padStart(2, '0')}:00`, studentTimezone);
+                    const adminTime = studentTime.tz(ADMIN_TIMEZONE);
+                    const adminHour = adminTime.hour();
+
+                    const isAdminTimeOutsideWorkingHours = adminHour < ADMIN_WORK_START_HOUR || adminHour > ADMIN_WORK_END_HOUR;
+                    const isBlockedByAdmin = adminBlockedHours.includes(adminHour);
                     const isBooked = bookedTimes.includes(hour);
-                    const isBlockedByAdmin = blockedHours.includes(hour);
                     
-                    if(!isBooked && !isBlockedByAdmin) {
+                    if(!isBooked && !isBlockedByAdmin && !isAdminTimeOutsideWorkingHours) {
                         hasAvailableSlots = true;
                         const timeSlot = document.createElement('button');
                         timeSlot.classList.add('w-full', 'text-center', 'p-3', 'border', 'rounded-lg', 'transition-all', 'duration-200', 'ease-in-out', 'time-slot');
@@ -400,7 +494,6 @@
                      availableTimesContainer.innerHTML = '<p class="text-gray-500 dark:text-gray-400 text-center">Nenhum horário disponível para este dia.</p>';
                 }
 
-                // Rola para a seção de horários em telas pequenas, APÓS carregar
                 if (window.innerWidth < 768) {
                     horariosTitle.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 }
@@ -424,6 +517,11 @@
         }
 
         function handleConfirmation() {
+            const studentTimezone = timezoneSelect.value;
+            if (!studentTimezone) {
+                showNotification("Atenção", "Por favor, selecione um fuso horário.");
+                return;
+            }
             if (!selectedDate || selectedTime === null) {
                 showNotification("Atenção", "Por favor, selecione uma data e um horário.");
                 return;
@@ -435,8 +533,8 @@
                 return;
             }
 
-            const options = { year: 'numeric', month: 'long', day: 'numeric' };
-            preConfirmationMessage.textContent = `Confirmar agendamento para ${selectedDate.toLocaleDateString('pt-BR', options)} às ${selectedTime}:00?`;
+            const options = { year: 'numeric', month: 'long', day: 'numeric', timeZone: studentTimezone };
+            preConfirmationMessage.textContent = `Confirmar agendamento para ${selectedDate.toLocaleDateString('pt-BR', options)} às ${String(selectedTime).padStart(2, '0')}:00?`;
             preConfirmationModal.classList.remove('hidden');
         }
 
@@ -444,15 +542,21 @@
             preConfirmationModal.classList.add('hidden');
             confirmBtn.disabled = true;
             confirmBtn.textContent = "Agendando...";
+            
+            const studentTimezone = timezoneSelect.value;
+            const dateStr = formatDateToId(selectedDate);
+            const timeStr = String(selectedTime).padStart(2, '0');
+            const dateTimeStr = `${dateStr}T${timeStr}:00:00`;
 
-            const appointmentTimestamp = new Date(selectedDate);
-            appointmentTimestamp.setHours(selectedTime, 0, 0, 0);
+            const dateInStudentTz = dayjs.tz(dateTimeStr, studentTimezone);
+            const appointmentTimestamp = dateInStudentTz.toDate();
 
             try {
                 await addDoc(collection(db, "agendamentos"), {
                     alunoNome: nameInput.value.trim(),
                     alunoEmail: emailInput.value.trim(),
-                    timestamp: Timestamp.fromDate(appointmentTimestamp)
+                    timestamp: Timestamp.fromDate(appointmentTimestamp),
+                    timezone: studentTimezone
                 });
 
                 const endTime = new Date(appointmentTimestamp);
@@ -460,7 +564,7 @@
 
                 showNotification(
                     "Sucesso!", 
-                    `Sua aula foi agendada para ${selectedDate.toLocaleDateString('pt-BR')} às ${selectedTime}:00.`,
+                    `Sua aula foi agendada para ${selectedDate.toLocaleDateString('pt-BR')} às ${selectedTime}:00 (${studentTimezone.replace(/_/g, ' ')}).`,
                     {
                         startTime: appointmentTimestamp,
                         endTime: endTime,
@@ -471,8 +575,9 @@
                 
                 nameInput.value = '';
                 emailInput.value = '';
+                selectedTime = null;
                 confirmationSection.classList.remove('show');
-                selectDay(selectedDate); // Re-renderiza os horários do dia
+                selectDay(selectedDate); 
             } catch (error) {
                 console.error("Erro ao adicionar agendamento: ", error);
                 showNotification("Erro", "Não foi possível completar o agendamento. Por favor, tente novamente.");
@@ -482,7 +587,6 @@
             }
         }
         
-        // --- LÓGICA "MEUS AGENDAMENTOS" ---
         async function findMyAppointments() {
             const email = searchEmailInput.value.trim().toLowerCase();
             if (!email) {
@@ -507,7 +611,6 @@
                     appointments.push(doc.data());
                 });
 
-                // Ordena do mais recente para o mais antigo
                 appointments.sort((a, b) => b.timestamp.toMillis() - a.timestamp.toMillis());
 
                 appointments.forEach(data => {
@@ -516,9 +619,11 @@
                     appointmentEl.className = 'p-3 border dark:border-gray-700 rounded-lg flex justify-between items-center';
                     
                     const textEl = document.createElement('div');
-                    const dateString = appointmentTime.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' });
-                    const timeString = `${String(appointmentTime.getHours()).padStart(2, '0')}:00`;
-                    textEl.innerHTML = `<p class="font-semibold">${dateString}</p><p class="text-sm text-gray-600 dark:text-gray-400">${timeString}</p>`;
+                    const studentTimezone = data.timezone || dayjs.tz.guess();
+                    const dateString = appointmentTime.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long', timeZone: studentTimezone });
+                    const timeString = appointmentTime.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: studentTimezone });
+                    
+                    textEl.innerHTML = `<p class="font-semibold">${dateString}</p><p class="text-sm text-gray-600 dark:text-gray-400">${timeString} (${studentTimezone.replace(/_/g, ' ')})</p>`;
                     
                     const buttonEl = document.createElement('button');
                     buttonEl.textContent = 'Adicionar na Agenda';
@@ -558,17 +663,33 @@
             }
         });
 
-
         prevMonthBtn.addEventListener('click', () => { currentDate.setMonth(currentDate.getMonth() - 1); renderCalendar(); });
         nextMonthBtn.addEventListener('click', () => { currentDate.setMonth(currentDate.getMonth() + 1); renderCalendar(); });
         confirmBtn.addEventListener('click', handleConfirmation);
         preConfirmationCancelBtn.addEventListener('click', () => preConfirmationModal.classList.add('hidden'));
         preConfirmationConfirmBtn.addEventListener('click', finalizeBooking);
         
-        window.onload = () => { 
-            renderCalendar();
-            themeCheck();
-        };
+        timezoneSelect.addEventListener('change', () => {
+            if (selectedDate) {
+                selectDay(selectedDate);
+            }
+        });
+        
+        async function initializeAppAndAuth() {
+            try {
+                await signInAnonymously(auth);
+                console.log("Authentication successful.");
+                populateTimezones();
+                await renderCalendar();
+                themeCheck();
+            } catch (error) {
+                console.error("Authentication or Initialization Error:", error);
+                showNotification("Erro de Conexão", "Não foi possível conectar ao sistema. Por favor, atualize a página e tente novamente.");
+            }
+        }
+        
+        window.onload = initializeAppAndAuth;
+
     </script>
 </body>
 </html>
